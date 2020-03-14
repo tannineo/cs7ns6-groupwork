@@ -11,6 +11,9 @@ import java.util.Date;
 
 public class App {
 
+    private static String HELP_OPTION = "h";
+    private static String HELP_OPTION_LONG = "help";
+
     private static String NODE_NAME_OPTION = "n";
     private static String NODE_NAME_OPTION_LONG = "name";
 
@@ -106,6 +109,7 @@ public class App {
      */
     private static Options getOption() {
         final Options options = new Options();
+        options.addOption(HELP_OPTION, HELP_OPTION_LONG, false, "Help");
         options.addOption(NODE_NAME_OPTION, NODE_NAME_OPTION_LONG, true, "The name of the server, omit to use a timestamped name. The server will read the persistent files (data, logs) due to the name.");
         options.addOption(HOST_OPTION, HOST_OPTION_LONG, true, "The host of server");
         options.addOption(PORT_OPTION, PORT_OPTION_LONG, true, "The port of server listening to");

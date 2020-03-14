@@ -25,9 +25,35 @@ The original paper is [here](https://raft.github.io/raft.pdf) with the bibliogra
 
 ### Compile
 
-Using `openjdk 1.8.0`.
+Using `openjdk 12.0`.
+
+To compile, run the compiling script in the root of the project folder, a jar file `KVNode.jar` will appear at the root.
+
+```text
+$ sh compile.sh
+```
 
 ### Run
+
+Use `-h` or `--help` command to access the help.
+
+```text
+$ java -jar KVNode.jar -h
+usage: KVNode.jar
+ -h,--help                Help
+ -n,--name <arg>          The name of the server, omit to use a timestamped
+                          name. The server will read the persistent files (data,
+                          logs) due to the name.
+ -o,--host <arg>          The host of server
+ -p,--port <arg>          The port of server listening to
+ -t,--target-host <arg>   The host of target server to join, omit this or
+                          target-port to establish a new group (as the first and
+                          the leader)
+ -y,--target-port <arg>   The port of target server to join, omit this or
+                          target-host to establish a new group (as the first and
+                          the leader)
+```
+
 
 ### Test
 

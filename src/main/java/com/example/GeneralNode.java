@@ -6,17 +6,27 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static com.example.PrintTime.printTime;
 
 public class GeneralNode {
 
-    public static HashMap<String, String> updates = new HashMap<>();
+    // following datasets are used by the server and need to be synchronized across all threads
+
+    // stores updated logs, which need to be pushed across all clients
+    public static ConcurrentHashMap<String, String> updates = new ConcurrentHashMap<>();
+    // list of client-sockets the server is connected to
     public static ArrayList<Socket> sockets = new ArrayList<>();
-    public static HashMap<String, String> logs = new HashMap<>();
-    public static HashMap<String, String> clientLogs = new HashMap<>();
-    public static HashMap<Long, Integer> threadToSocketIndex = new HashMap<>();
-    public static HashMap<String, HashSet<String>> logsMetaData = new HashMap<>();
+    // list of client-ip_addresses the server is connected to
+    public static ArrayList<String> ip_addresses = new ArrayList<>();
+    // map to get the socket index on a particular thread id (eg: thread 32145 has index i, used in: sockets.get(i))
+    public static ConcurrentHashMap<Long, Integer> threadToSocketIndex = new ConcurrentHashMap<>();
+    // which node has which key-value pair
+    public static ConcurrentHashMap<String, HashSet<String>> logsMetaData = new ConcurrentHashMap<>();
+
+    // following datasets are used by every instance (client and server) and needs to be synchronized across all threads in the server
+    public static ConcurrentHashMap<String, String> localLogs = new ConcurrentHashMap<>();
 
     private static void serverInit(int port) {
         ServerSocket server;
@@ -49,8 +59,8 @@ public class GeneralNode {
         respondToHeartbeat(socket);
     }
 
-    private static HashMap<String, String> addLogs() {
-        HashMap<String, String> updatedLogs = new HashMap<>();
+    private static ConcurrentHashMap<String, String> addLogs() {
+        ConcurrentHashMap<String, String> updatedLogs = new ConcurrentHashMap<>();
         Random r = new Random();
         int temp = r.nextInt(10);
         int temp2 = r.nextInt(4);
@@ -85,7 +95,7 @@ public class GeneralNode {
         String line = "";
         long threadId = Thread.currentThread().getId();
         int socketIndex = threadToSocketIndex.get(threadId);
-        HashMap<String, String> specificClientLog;
+        ConcurrentHashMap<String, String> specificClientLog;
         while (!line.toLowerCase().equals("quit")) {
             toClient.println("Are you there?&Have your logs changed?");
             System.out.println("To Client: Are you there?&Have your logs changed?");
@@ -95,7 +105,7 @@ public class GeneralNode {
                 for (String line1 : splitLine) {
                     if (line1.equals("Yes")) {
                         System.out.println("From Client " + socketIndex + " : " + line1);
-                    } else if (line1.contains("No change in logs")) {
+                    } else if (line1.contains("No change in localLogs")) {
                         System.out.println("From Client " + socketIndex + " : " + line1);
                     } else if (line1.contains("Logs have been changed")) {
                         String line2[] = line1.split("#");
@@ -121,8 +131,13 @@ public class GeneralNode {
                     System.out.print(";\t");
                 }
                 System.out.println(); */
-                for (Map.Entry<String, String> entry : clientLogs.entrySet()) {
+                for (Map.Entry<String, String> entry : localLogs.entrySet()) {
                     System.out.println(entry.getKey() + ": " + entry.getValue());
+                }
+                System.out.println();
+                for(String ip : ip_addresses)
+                {
+                    System.out.println(ip);
                 }
                 System.out.println();
             } catch (IOException e) {
@@ -142,14 +157,14 @@ public class GeneralNode {
             toClients.println("Updated log#" + serializeObject(updates));
             System.out.println("To Client: Updated log#" + serializeObject(updates));
         }
-        updates = new HashMap<>();
+        updates = new ConcurrentHashMap<>();
     }
 
-    private static void updateServerLogs(HashMap<String, String> specificClientLog) {
-        clientLogs.putAll(specificClientLog);
+    private static void updateServerLogs(ConcurrentHashMap<String, String> specificClientLog) {
+        localLogs.putAll(specificClientLog);
     }
 
-    private static void updateServerMetaData(HashMap<String, String> clientLog, int socketIndex) {
+    private static void updateServerMetaData(ConcurrentHashMap<String, String> clientLog, int socketIndex) {
         Set<String> ketSet = clientLog.keySet();
         for (String key : ketSet) {
             if (logsMetaData.containsKey(key)) {
@@ -167,16 +182,16 @@ public class GeneralNode {
         BufferedReader fromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         String line = "";
         boolean isNewLog;
-        HashMap<String, String> updatedLog;
+        ConcurrentHashMap<String, String> updatedLog;
         while (!line.toLowerCase().equals("quit")) {
             updatedLog = addLogs();
-            logs.putAll(updatedLog);
+            localLogs.putAll(updatedLog);
             isNewLog = updatedLog.size() > 0;
             try {
                 line = fromServer.readLine();
                 if (line.contains("Updated log")) {
                     System.out.println("From Server: " + line);
-                    logs.putAll(deserializeObject(line.split("#")[1]));
+                    localLogs.putAll(deserializeObject(line.split("#")[1]));
                     line = fromServer.readLine();
                 }
                 String[] splitLine = line.split("&");
@@ -193,8 +208,8 @@ public class GeneralNode {
                             returnMessage.append("Logs have been changed#").append(serializeObject(updatedLog));
                             System.out.println("To Server: Logs have been changed#" + serializeObject(updatedLog));
                         } else {
-                            returnMessage.append("No change in logs");
-                            System.out.println("To Server: No change in logs");
+                            returnMessage.append("No change in localLogs");
+                            System.out.println("To Server: No change in localLogs");
                         }
                     } else {
                         System.out.println("ERROR PRINT: " + line1);
@@ -204,8 +219,8 @@ public class GeneralNode {
                     returnMessage.append("&");
                 }
                 toServer.println(returnMessage.toString());
-                System.out.println("Local logs on thread " + Thread.currentThread().getId());
-                for (Map.Entry<String, String> entry : logs.entrySet()) {
+                System.out.println("Local localLogs on thread " + Thread.currentThread().getId());
+                for (Map.Entry<String, String> entry : localLogs.entrySet()) {
                     System.out.println(entry.getKey() + ": " + entry.getValue());
                 }
                 System.out.println();
@@ -218,7 +233,7 @@ public class GeneralNode {
         socket.close();
     }
 
-    private static String serializeObject(HashMap<String, String> map) {
+    private static String serializeObject(ConcurrentHashMap<String, String> map) {
         StringBuilder serializedString = new StringBuilder();
         for (Map.Entry<String, String> entry : map.entrySet()) {
             String key = entry.getKey();
@@ -230,8 +245,8 @@ public class GeneralNode {
         return serializedString.toString();
     }
 
-    private static HashMap<String, String> deserializeObject(String serializedObject) {
-        HashMap<String, String> map = new HashMap<>();
+    private static ConcurrentHashMap<String, String> deserializeObject(String serializedObject) {
+        ConcurrentHashMap<String, String> map = new ConcurrentHashMap<>();
         String line[] = serializedObject.split(",");
 //        System.out.println("DESER: " + serializedObject);
         for (String line1 : line) {

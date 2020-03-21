@@ -19,6 +19,7 @@ public class SocketListener implements Runnable {
         try {
             socket = this.server.accept();
             sockets.add(socket);
+            ip_addresses.add(socket.getRemoteSocketAddress().toString());
             threadToSocketIndex.put(Thread.currentThread().getId(), sockets.size() - 1);
             System.out.println("Connected to " + socket.getRemoteSocketAddress());
             sendHeartbeat(socket);

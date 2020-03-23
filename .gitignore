@@ -23,10 +23,15 @@
 hs_err_pid*
 
 # idea files & project files
+.vscode/
 .idea/
 .settings/
 .project
 .classpath
 *.iml
 .java-version
+.factorypath
 target/
+
+# logs
+*.log

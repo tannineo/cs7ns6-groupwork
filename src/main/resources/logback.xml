@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<configuration>
+    <!--    <timestamp key="bySecond" datePattern="yyyy-MM-dd-HH_mm_ss"/>-->
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>
+                %d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n
+            </Pattern>
+        </layout>
+    </appender>
+
+    <appender name="kvStoreLog" class="ch.qos.logback.core.FileAppender">
+        <file>${KVNODENAME}.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="kvStoreLogError" class="ch.qos.logback.core.FileAppender">
+        <file>${KVNODENAME}-error.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="debug">
+        <appender-ref ref="kvStoreLog"/>
+        <appender-ref ref="kvStoreLogError"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+</configuration>

@@ -1,9 +1,12 @@
 package life.tannineo;
 
+import com.alibaba.fastjson.JSON;
 import life.tannineo.config.AppConfig;
 import life.tannineo.node.Node;
 import life.tannineo.node.config.NodeConfig;
 import org.apache.commons.cli.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
@@ -44,9 +47,9 @@ public class App {
         String targetHost = "";
         String targetPort = "0";
 
-        try {
-            CommandLine commandLine = parser.parse(options, args);
+        CommandLine commandLine = parser.parse(options, args);
 
+        try {
             // help
             if (commandLine.hasOption("h") || commandLine.hasOption("help")) {
                 HelpFormatter helpFormatter = new HelpFormatter();
@@ -78,13 +81,17 @@ public class App {
             if (commandLine.hasOption(TARGET_PORT_OPTION) || commandLine.hasOption(TARGET_PORT_OPTION_LONG)) {
                 targetPort = commandLine.getOptionValue(TARGET_PORT_OPTION, targetPort);
             }
-            if (targetHost != "" && targetPort != "") {
+            if (targetHost.equals("") && targetPort.equals("")) {
                 newGroup = false;
             }
         } catch (Exception e) {
             System.out.println("Unexpected exception during parsing the args");
             throw e;
         }
+
+        // set the logger's name before ANY logger
+        System.setProperty("log.name", nodeName);
+        Logger logger = LoggerFactory.getLogger(App.class);
 
         // initializing the IOC context
         ApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
@@ -97,9 +104,11 @@ public class App {
         nodeConfig.setTargetHost(targetHost);
         nodeConfig.setTargetPort(Integer.parseInt(targetPort));
 
+        logger.debug("Server start with config: " + JSON.toJSONString(commandLine.getOptions()));
+
         // start the node server
         Node node = applicationContext.getBean(Node.class);
-        node.start();
+        // node.start();
     }
 
     /**

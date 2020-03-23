@@ -30,6 +30,17 @@ public class NodeConfig {
      */
     int targetPort;
 
+    /**
+     * the timeout of connection
+     */
+    int connectTimeout = 3000;
+
+
+    /**
+     * if exceed, the connection fails
+     */
+    int retryTime = 5;
+
     public String getHost() {
         return host;
     }
@@ -68,5 +79,21 @@ public class NodeConfig {
 
     public void setTargetPort(int targetPort) {
         this.targetPort = targetPort;
+    }
+
+    public int getConnectTimeout() {
+        return connectTimeout;
+    }
+
+    public void setConnectTimeout(int connectTimeout) {
+        this.connectTimeout = connectTimeout;
+    }
+
+    public int getRetryTime() {
+        return retryTime;
+    }
+
+    public void setRetryTime(int retryTime) {
+        this.retryTime = retryTime;
     }
 }

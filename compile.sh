@@ -1,6 +1,5 @@
 #!/bin/bash
 
-mvn clean
-mvn package
+mvn clean package
 
 cp ./target/KVNode-1.0-SNAPSHOT.jar ./KVNode.jar

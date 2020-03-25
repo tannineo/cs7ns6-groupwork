@@ -54,6 +54,20 @@ usage: KVNode.jar
                           the leader)
 ```
 
+### Server Command
+
+server command:
+
+- `get KEY`
+  - get a value using the `KEY`
+- `set KEY VALUE`
+  - set `VALUE` to the `KEY`
+- `del KEY`
+  - delete using the `KEY`
+- `noresponse`
+  - give no response to all the server & no bi-direction communication
+- `noresponse NAME`
+  - give no response to the server with name `NAME` & no bi-direction communication
 
 ### Test
 
@@ -64,5 +78,9 @@ Graph drawing using [diagrams.net (draw.io)](https://app.diagrams.net/).
 The app has a google drive version and a desktop version.
 
 We choose to keep files inside the project repository.
+
+### Architecture
+
+
 
 ## About

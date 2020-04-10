@@ -1,8 +1,8 @@
 # Compiled class file
 *.class
 
-# Log file
-*.log
+# OSX
+.DS_Store
 
 # BlueJ files
 *.ctxt
@@ -35,3 +35,10 @@ target/
 
 # logs
 *.log
+
+# rockdb
+*_log/
+*_state/
+
+# mvn
+#dependency-reduced-pom.xml

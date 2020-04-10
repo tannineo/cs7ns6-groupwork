@@ -9,8 +9,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>12</source>
-          <target>12</target>
+          <source>8</source>
+          <target>8</target>
         </configuration>
       </plugin>
       <plugin>
@@ -25,7 +25,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>life.tannineo.App</mainClass>
+                  <mainClass>life.tannineo.cs7ns6.App</mainClass>
                 </transformer>
               </transformers>
             </configuration>

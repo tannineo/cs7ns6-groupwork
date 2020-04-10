@@ -64,9 +64,9 @@ server command:
   - set `VALUE` to the `KEY`
 - `del KEY`
   - delete using the `KEY`
-- `noresponse`
+- `nra`
   - give no response to all the server & no bi-direction communication
-- `noresponse NAME`
+- `nr NAME`
   - give no response to the server with name `NAME` & no bi-direction communication
 
 ### Test

@@ -5,6 +5,11 @@ import com.alipay.remoting.BizContext;
 import com.alipay.remoting.rpc.protocol.AbstractUserProcessor;
 import life.tannineo.cs7ns6.node.entity.network.Request;
 
+/**
+ * RPC communication process component
+ *
+ * @param <T>
+ */
 public abstract class RProcessor<T> extends AbstractUserProcessor<T> {
 
     @Override

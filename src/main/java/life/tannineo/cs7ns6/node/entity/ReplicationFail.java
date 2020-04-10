@@ -2,6 +2,9 @@ package life.tannineo.cs7ns6.node.entity;
 
 import java.util.concurrent.Callable;
 
+/**
+ * the operation in queue
+ */
 public class ReplicationFail {
     static String count = "_count";
     static String success = "_success";

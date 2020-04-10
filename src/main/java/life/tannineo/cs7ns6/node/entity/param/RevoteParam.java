@@ -3,22 +3,28 @@ package life.tannineo.cs7ns6.node.entity.param;
 import lombok.Getter;
 import lombok.Setter;
 
+
+/**
+ * revote param
+ * wrapped in request/response
+ */
 @Getter
 @Setter
 public class RevoteParam extends BaseParam {
 
     /**
-     * 请求选票的候选人的 Id(ip:selfPort)
+     * the candidate who ask vote
+     * ( ip:port )
      */
     String candidateId;
 
     /**
-     * 候选人的最后日志条目的索引值
+     * candidate's last log index
      */
     long lastLogIndex;
 
     /**
-     * 候选人最后日志条目的任期号
+     * candidate's (last index) term
      */
     long lastLogTerm;
 

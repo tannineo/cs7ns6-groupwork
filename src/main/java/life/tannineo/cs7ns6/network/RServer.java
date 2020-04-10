@@ -10,6 +10,9 @@ import life.tannineo.cs7ns6.node.entity.param.RevoteParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * RPC Server
+ */
 public class RServer {
 
     private volatile Logger logger;

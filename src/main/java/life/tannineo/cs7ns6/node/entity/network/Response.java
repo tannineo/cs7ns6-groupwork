@@ -5,6 +5,11 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
+/**
+ * the raft response
+ *
+ * @param <T>
+ */
 @Getter
 @Setter
 public class Response<T> implements Serializable {

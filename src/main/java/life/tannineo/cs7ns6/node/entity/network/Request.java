@@ -7,6 +7,11 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
+/**
+ * the raft communication request
+ *
+ * @param <T>
+ */
 @Getter
 @Setter
 @ToString

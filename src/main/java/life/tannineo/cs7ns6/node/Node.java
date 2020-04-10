@@ -225,36 +225,36 @@ public class Node {
         // endregion
     }
 
-    // operation: get KEY
-    public String operationGet(String key) {
-        String value = "NULL";
-        return value;
-    }
-
-    // operation: set KEY VALUE
-    public String operationSet(String key, String value) {
-        return value;
-    }
-
-    // operation: del KEY
-    public String operationDel(String key) {
-        String value = "NULL";
-        return value;
-    }
-
-    public String operationnNoResponseToAll() {
-        String value = "";
-        return value;
-    }
-
-    public String operationnNoResponseTo(String serverName) {
-        String value = "";
-        return value;
-    }
-
-    public void operationShutdown() {
-        // TODO graceful shutdown
-    }
+//    // operation: get KEY
+//    public String operationGet(String key) {
+//        String value = "NULL";
+//        return value;
+//    }
+//
+//    // operation: set KEY VALUE
+//    public String operationSet(String key, String value) {
+//        return value;
+//    }
+//
+//    // operation: del KEY
+//    public String operationDel(String key) {
+//        String value = "NULL";
+//        return value;
+//    }
+//
+//    public String operationnNoResponseToAll() {
+//        String value = "";
+//        return value;
+//    }
+//
+//    public String operationnNoResponseTo(String serverName) {
+//        String value = "";
+//        return value;
+//    }
+//
+//    public void operationShutdown() {
+//        // TODO graceful shutdown
+//    }
 
     // region fail management
     class ReplicationFailQueueConsumer implements Runnable {
@@ -367,7 +367,7 @@ public class Node {
 
                     entryParam.setLeaderCommit(commitIndex);
 
-                    // 以我这边为准, 这个行为通常是成为 leader 后,首次进行 RPC 才有意义.
+                    // First RPC after becoming the LEADER
                     Long nextIndex = nextIndexs.get(peer);
                     LinkedList<LogEntry> logEntries = new LinkedList<>();
                     if (entry.getIndex() >= nextIndex) {
@@ -467,11 +467,14 @@ public class Node {
 
 
     /**
-     * 客户端的每一个请求都包含一条被复制状态机执行的指令。
-     * 领导人把这条指令作为一条新的日志条目附加到日志中去，然后并行的发起附加条目 RPCs 给其他的服务器，让他们复制这条日志条目。
-     * 当这条日志条目被安全的复制（下面会介绍），领导人会应用这条日志条目到它的状态机中然后把执行的结果返回给客户端。
-     * 如果跟随者崩溃或者运行缓慢，再或者网络丢包，
-     * 领导人会不断的重复尝试附加日志条目 RPCs （尽管已经回复了客户端）直到所有的跟随者都最终存储了所有的日志条目。
+     * The request from client contains a Command to be replicated by the stateMachine
+     * LEADER will append this as a new log, and send RPCs to other nodes to replicate the log
+     * <p>
+     * If the log is replicated safely, there will be a response to the client
+     * <p>
+     * If the FOLLOWERs are slow or lost
+     * LEADER will redo appending RPCs, until all the FOLLOWERS finally save the logs.
+     * (though the responsed to the client)
      *
      * @param request
      * @return
@@ -503,7 +506,7 @@ public class Node {
             .term(currentTerm)
             .build();
 
-        // 预提交到本地日志, TODO 预提交
+        // TODO  pre-commit
         logModule.write(logEntry);
         logger.info("write logModule success, logEntry info : {}, log index : {}", logEntry, logEntry.getIndex());
 
@@ -512,11 +515,11 @@ public class Node {
         List<Future<Boolean>> futureList = new CopyOnWriteArrayList<>();
 
         int count = 0;
-        //  复制到其他机器
+        // replicate to other nodes
         for (Peer peer : peerSet.getPeersWithOutSelf()) {
             // TODO check self and RaftThreadPool
             count++;
-            // 并行发起 RPC 复制.
+            // concurent RPC
             futureList.add(replication(peer, logEntry));
         }
 
@@ -537,10 +540,12 @@ public class Node {
             }
         }
 
-        // 如果存在一个满足N > commitIndex的 N，并且大多数的matchIndex[i] ≥ N成立，
-        // 并且log[N].term == currentTerm成立，那么令 commitIndex 等于这个 N （5.3 和 5.4 节）
+        // if exists N > commitIndex
+        // and also matchIndex[i] >= N
+        // and also log[N].term == currentTerm
+        // then let commitIndex = N （see 5.3, 5.4
         List<Long> matchIndexList = new ArrayList<>(matchIndexs.values());
-        // 小于 2, 没有意义
+        // no meaning when number of nodes <= 2
         int median = 0;
         if (matchIndexList.size() >= 2) {
             Collections.sort(matchIndexList);
@@ -554,23 +559,27 @@ public class Node {
             }
         }
 
-        //  响应客户端(成功一半)
+        //  response to *client*
         if (success.get() >= (count / 2)) {
-            // 更新
+            // update log
             commitIndex = logEntry.getIndex();
-            //  应用到状态机
+            // apply to stateMachine
             getStateMachine().apply(logEntry);
             lastApplied = commitIndex;
 
             logger.info("success apply local state machine,  logEntry info : {}", logEntry);
-            // 返回成功.
+            // return success
             return ClientKVAck.ok();
         } else {
-            // 回滚已经提交的日志.
+            // rollback the logs
             logModule.removeOnStartIndex(logEntry.getIndex());
-            logger.warn("fail apply local state  machine,  logEntry info : {}", logEntry);
-            // TODO 不应用到状态机,但已经记录到日志中.由定时任务从重试队列取出,然后重复尝试,当达到条件时,应用到状态机.
-            // 这里应该返回错误, 因为没有成功复制过半机器.
+            logger.warn("failed to apply local stateMachine, logEntry info : {}", logEntry);
+
+            // TODO: not applied to stateMachine, but already applied to logModule,
+            // retry the task in the retry queue,
+            // then apply to the stateMachine when reach the condition
+
+            // return fail because the change failed to replicate on more than half of the nodes
             return ClientKVAck.fail();
         }
     }
@@ -649,6 +658,22 @@ public class Node {
      * 2. 如果接收到大多数服务器的选票，那么就变成领导人
      * 3. 如果接收到来自新的领导人的附加日志 RPC，转变成跟随者
      * 4. 如果选举过程超时，再次发起一轮选举
+     */
+
+    /**
+     * the election logic
+     * <p>
+     * 1. when becoming a candidate, start this logic
+     * increase currentTerm
+     * vote for itself
+     * reset the vote timeout
+     * send request for vote to all the nodes
+     * <p>
+     * 2. if receiving more than half of the nodes, become the LEADER
+     * <p>
+     * 3. if receiving the append log request from the new LEADER, become the follower
+     * <p>
+     * 4. if the vote timeout triggered, do this logic again
      */
     class ElectionTask implements Runnable {
 
@@ -769,11 +794,10 @@ public class Node {
 
             int success = success2.get();
             logger.info("node {} maybe become leader , success count = {} , status : {}", peerSet.getSelf(), success, state);
-            // 如果投票期间,有其他服务器发送 appendEntry , 就可能变成 follower ,这时,应该停止.
+            // appendEntry from other node (LEADER), itself may become the FOLLOWER
             if (state.equals(NodeState.FOLLOWER)) {
                 return;
             }
-            // 加上自身.
             if (success >= peers.size() / 2) {
                 logger.warn("node {} become leader ", peerSet.getSelf());
                 state = NodeState.LEADER;
@@ -781,7 +805,7 @@ public class Node {
                 votedFor = "";
                 becomeLeaderToDoThing();
             } else {
-                // else 重新选举
+                // else redo election logic
                 votedFor = "";
             }
 

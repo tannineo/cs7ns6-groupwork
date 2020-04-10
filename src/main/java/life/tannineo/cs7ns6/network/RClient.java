@@ -5,6 +5,9 @@ import life.tannineo.cs7ns6.node.entity.network.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * RPC Client
+ */
 public class RClient {
 
     public static Logger logger = LoggerFactory.getLogger(RClient.class);

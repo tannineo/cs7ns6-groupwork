@@ -5,6 +5,10 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
+/**
+ * result of revote
+ * wrapped in response
+ */
 @Getter
 @Setter
 public class RevoteResult implements Serializable {

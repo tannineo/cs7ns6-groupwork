@@ -6,6 +6,10 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
+/**
+ * log entry
+ * wrapped in response
+ */
 @Setter
 @Getter
 @ToString

@@ -6,12 +6,16 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
+/**
+ * client request
+ */
 @Getter
 @Setter
 @ToString
 public class ClientKVReq implements Serializable {
 
     public static int PUT = 0;
+
     public static int GET = 1;
 
     int type;

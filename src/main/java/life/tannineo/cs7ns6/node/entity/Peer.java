@@ -6,6 +6,9 @@ import lombok.ToString;
 
 import java.util.Objects;
 
+/**
+ * info of one peer
+ */
 @Getter
 @Setter
 @ToString

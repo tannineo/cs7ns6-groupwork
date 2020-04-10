@@ -5,6 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+/**
+ * log content
+ * wrapped in request
+ */
 @Getter
 @Setter
 @ToString

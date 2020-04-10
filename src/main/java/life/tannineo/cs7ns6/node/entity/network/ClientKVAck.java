@@ -6,6 +6,9 @@ import lombok.ToString;
 
 import java.io.Serializable;
 
+/**
+ * client response
+ */
 @Getter
 @Setter
 @ToString

@@ -7,6 +7,9 @@ import lombok.ToString;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * the command stored in the log
+ */
 @Getter
 @Setter
 @ToString

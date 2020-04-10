@@ -12,9 +12,6 @@ public class PeerSet implements Serializable {
 
     private volatile Peer leader;
 
-    /**
-     * final
-     */
     private volatile Peer self;
 
     public PeerSet() {

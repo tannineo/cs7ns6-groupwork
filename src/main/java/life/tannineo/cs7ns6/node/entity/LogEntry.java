@@ -6,6 +6,9 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.Objects;
 
+/**
+ * log entry
+ */
 @Getter
 @Setter
 public class LogEntry implements Serializable, Comparable {

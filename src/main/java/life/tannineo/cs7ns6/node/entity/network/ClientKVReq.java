@@ -14,7 +14,7 @@ import java.io.Serializable;
 @ToString
 public class ClientKVReq implements Serializable {
 
-    public static int PUT = 0;
+    public static int SET = 0;
 
     public static int GET = 1;
 
@@ -35,7 +35,7 @@ public class ClientKVReq implements Serializable {
     }
 
     public enum Type {
-        PUT(0), GET(1);
+        SET(0), GET(1);
         int code;
 
         Type(int code) {

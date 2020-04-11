@@ -180,81 +180,10 @@ public class Node {
             started = true;
 
             logger.info("start success, selfId : {} \n with config {}", peerSet.getSelf(), config);
-
-            // region watch the commandline input
-
-//            Scanner sc = new Scanner(System.in);
-//            while (sc.hasNext()) {
-//                String input = sc.nextLine();
-//                logger.debug("You just input:\n" + input);
-//
-//                String[] inputArr = input.trim().split(" ");
-//
-//                try {
-//                    switch (inputArr[0]) {
-//                        case "get":
-//                            logger.info("get " + inputArr[1] + " " + this.operationGet(inputArr[1]));
-//                            break;
-//                        case "set":
-//                            logger.info("set " + inputArr[1] + " " + this.operationSet(inputArr[1], inputArr[2]));
-//                            break;
-//                        case "del":
-//                            logger.info("get " + inputArr[1] + " " + this.operationDel(inputArr[1]));
-//                            break;
-//                        case "nra":
-//                            logger.info("nra " + this.operationnNoResponseToAll());
-//                            break;
-//                        case "nr":
-//                            logger.info("nr " + inputArr[1] + " " + this.operationnNoResponseTo(inputArr[1]));
-//                            break;
-//                        case "exit":
-//                            logger.info("exit ... to gracefully shutdown");
-//                            this.operationShutdown();
-//                            break;
-//                        default:
-//                            logger.warn("Command parsing error...");
-//                    }
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                    throw e;
-//                }
-//            }
-
-            // endregion
         }
         // endregion
     }
 
-//    // operation: get KEY
-//    public String operationGet(String key) {
-//        String value = "NULL";
-//        return value;
-//    }
-//
-//    // operation: set KEY VALUE
-//    public String operationSet(String key, String value) {
-//        return value;
-//    }
-//
-//    // operation: del KEY
-//    public String operationDel(String key) {
-//        String value = "NULL";
-//        return value;
-//    }
-//
-//    public String operationnNoResponseToAll() {
-//        String value = "";
-//        return value;
-//    }
-//
-//    public String operationnNoResponseTo(String serverName) {
-//        String value = "";
-//        return value;
-//    }
-//
-//    public void operationShutdown() {
-//        // TODO graceful shutdown
-//    }
 
     // region fail management
     class ReplicationFailQueueConsumer implements Runnable {

@@ -37,14 +37,15 @@ $ sh compile.sh
 
 The builds of the code are divided into:
 
-- node (server): from `App.java`
-- client (TODO: no build script provided now): from ``
+- client: with `-c` flag
+- node (server): without `-c` flag and with valid configs
 
 Use `-h` or `--help` command to access the help.
 
 ```text
 $ java -jar KVNode.jar -h
 usage: KVNode.jar
+ -c,--client              Initiate as a client.
  -h,--help                Help
  -n,--name <arg>          The name of the server, omit to use a timestamped
                           name. The server will read the persistent files (data,

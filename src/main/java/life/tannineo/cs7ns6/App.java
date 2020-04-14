@@ -1,15 +1,24 @@
 package life.tannineo.cs7ns6;
 
 import com.alibaba.fastjson.JSON;
+import life.tannineo.cs7ns6.network.RClient;
 import life.tannineo.cs7ns6.node.Node;
 import life.tannineo.cs7ns6.node.NodeConfig;
+import life.tannineo.cs7ns6.node.entity.Command;
+import life.tannineo.cs7ns6.node.entity.network.ClientKVAck;
+import life.tannineo.cs7ns6.node.entity.network.ClientKVReq;
+import life.tannineo.cs7ns6.node.entity.network.Request;
+import life.tannineo.cs7ns6.node.entity.network.Response;
 import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.Scanner;
 
 public class App {
+
+    public static Logger logger = LoggerFactory.getLogger(App.class);
 
     private static String HELP_OPTION = "h";
     private static String HELP_OPTION_LONG = "help";
@@ -29,6 +38,11 @@ public class App {
     private static String TARGET_PORT_OPTION = "y";
     private static String TARGET_PORT_OPTION_LONG = "target-port";
 
+    private static String CLIENT_MODE = "c";
+    private static String CLIENT_MODE_LONG = "client";
+
+    private final static RClient CLIENT = new RClient();
+
     public static void main(String[] args) throws Exception {
         // the entrance of the server
 
@@ -44,16 +58,25 @@ public class App {
         String targetHost = "";
         String targetPort = "0";
 
+        /**
+         * client mode
+         */
+        boolean clientMode = false;
+
         CommandLine commandLine = parser.parse(options, args);
 
         try {
             // help
-            if (commandLine.hasOption("h") || commandLine.hasOption("help")) {
+            if (commandLine.hasOption(HELP_OPTION) || commandLine.hasOption(HELP_OPTION_LONG)) {
                 HelpFormatter helpFormatter = new HelpFormatter();
                 helpFormatter.setWidth(80);
                 helpFormatter.printHelp("KVNode.jar", options);
                 // end the program
                 return;
+            }
+
+            if (commandLine.hasOption(CLIENT_MODE) || commandLine.hasOption(CLIENT_MODE_LONG)) {
+                clientMode = true;
             }
 
             // have a name
@@ -86,36 +109,63 @@ public class App {
             throw e;
         }
 
-        // set the logger's name before ANY logger
-//        System.setProperty("log.name", nodeName);
-        Logger logger = LoggerFactory.getLogger(App.class);
+        if (clientMode) {
+            logger.info("KVNODE starts in CLIENT MODE!!~~~~~~~~~~");
+            // region watch the commandline input
+            Scanner sc = new Scanner(System.in);
+            while (sc.hasNext()) {
+                String input = sc.nextLine();
+                logger.debug("You just input:\n" + input);
 
-        // set configs
-        NodeConfig nodeConfig = new NodeConfig();
-        nodeConfig.setName(nodeName);
-        nodeConfig.setHost(host);
-        nodeConfig.setPort(Integer.parseInt(port));
-        nodeConfig.setNewGroup(newGroup);
-        nodeConfig.setTargetHost(targetHost);
-        nodeConfig.setTargetPort(Integer.parseInt(targetPort));
+                String[] inputArr = input.trim().split(" ");
 
-        // TODO: define peers list
-        String[] peers = {
-            "localhost:4111",
-            "localhost:4112",
-            "localhost:4113",
-            "localhost:4114",
-            "localhost:4115",
-            "localhost:4116"
-        };
-        nodeConfig.setPeers(peers);
+                try {
+                    switch (inputArr[1]) {
+                        case "get":
+                            logger.info("get " + inputArr[2] + "=" + operationGet(inputArr[0], inputArr[2]));
+                            break;
+                        case "set":
+                            logger.info("set " + inputArr[2] + "=" + operationSet(inputArr[0], inputArr[2], inputArr[3]));
+                            break;
+                        case "del":
+                            logger.info("get " + inputArr[2] + "=" + operationDel(inputArr[0], inputArr[2]));
+                            break;
+                        case "nra":
+                            logger.info("nra " + operationNoResponseToAll(inputArr[0]));
+                            break;
+                        case "nr":
+                            logger.info("nr " + inputArr[2] + " " + operationNoResponseTo(inputArr[0], inputArr[2]));
+                            break;
+                        default:
+                            logger.warn("Command parsing error...");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // endregion
+        } else {
+            /**
+             * server / node start
+             */
+            // set configs
+            NodeConfig nodeConfig = new NodeConfig();
+            nodeConfig.setName(nodeName);
+            nodeConfig.setHost(host);
+            nodeConfig.setPort(Integer.parseInt(port));
+            nodeConfig.setNewGroup(newGroup);
+            nodeConfig.setTargetHost(targetHost);
+            nodeConfig.setTargetPort(Integer.parseInt(targetPort));
+
+            logger.debug("Server start with config: " + JSON.toJSONString(commandLine.getOptions()));
+
+            // start the node server
+            Node node = new Node(nodeConfig);
+            node.start();
+        }
 
 
-        logger.debug("Server start with config: " + JSON.toJSONString(commandLine.getOptions()));
-
-        // start the node server
-        Node node = new Node(nodeConfig);
-        node.start();
     }
 
     /**
@@ -131,7 +181,70 @@ public class App {
         options.addOption(PORT_OPTION, PORT_OPTION_LONG, true, "The port of server listening to");
         options.addOption(TARGET_HOST_OPTION, TARGET_HOST_OPTION_LONG, true, "The host of target server to join, omit this or target-port to establish a new group (as the first and the leader)");
         options.addOption(TARGET_PORT_OPTION, TARGET_PORT_OPTION_LONG, true, "The port of target server to join, omit this or target-host to establish a new group (as the first and the leader)");
-
+        options.addOption(CLIENT_MODE, CLIENT_MODE_LONG, false, "Initiate as a client.");
         return options;
     }
+
+
+    // region TODO operations
+    // operation: ip:port get KEY
+    public static String operationGet(String addr, String key) {
+        ClientKVReq obj = ClientKVReq.newBuilder().key(key).type(ClientKVReq.GET).build();
+
+        Request<ClientKVReq> r = new Request<>();
+        r.setObj(obj);
+        r.setUrl(addr);
+        r.setCmd(Request.CLIENT_REQ);
+        Response<ClientKVAck> response = null;
+        try {
+            response = CLIENT.send(r);
+            logger.info("request content : {}, url : {}, put response : {}", key, r.getUrl(), response.getResult());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        Command cmd = (Command) response.getResult().getResult();
+
+        if (cmd == null) return "null";
+        return cmd.getValue();
+    }
+
+    // operation: ip:port set KEY VALUE
+    public static String operationSet(String addr, String key, String value) {
+        ClientKVReq obj = ClientKVReq.newBuilder().key(key).value(value).type(ClientKVReq.SET).build();
+
+        Request<ClientKVReq> r = new Request<>();
+        r.setObj(obj);
+        r.setUrl(addr);
+        r.setCmd(Request.CLIENT_REQ);
+        Response<ClientKVAck> response = null;
+        try {
+            response = CLIENT.send(r);
+            logger.info("request content : {}, url : {}, put response : {}", key + "=" + obj.getValue(), r.getUrl(), response.getResult());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return (String) response.getResult().getResult();
+    }
+
+    // operation: ip:port del KEY
+    public static String operationDel(String addr, String key) {
+        String value = "NULL";
+        return value;
+    }
+
+    // operation: ip:port nra
+    public static String operationNoResponseToAll(String addr) {
+        String value = "";
+        return value;
+    }
+
+    // operation: ip:port nr ip:port
+    public static String operationNoResponseTo(String addr, String serverName) {
+        String value = "";
+        return value;
+    }
+
+    // endregion
 }

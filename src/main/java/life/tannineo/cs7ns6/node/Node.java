@@ -150,18 +150,23 @@ public class Node {
         this.selfAddr = nodeConfig.getName();
         this.stateMachine = new StateMachine("./" + this.selfAddr + "_state/");
         this.logModule = new LogModule("./" + this.selfAddr + "_log/");
-        this.peerSet = new PeerSet();
 
-        for (String s : config.getPeers()) {
-            Peer peer = new Peer(s);
-            // TODO: HARDCODED localhost
-        }
+        // TODO: might change
+        this.peerSet = new PeerSet();
+        this.peerSet.getList().add(new Peer(this.selfAddr));
 
         this.rServer = new RServer(this.config.port, this);
     }
 
-    public void start() throws Exception {
+    public void startWithLeader(String leaderAddr) throws Exception {
+        // TODO: send request to update peerSet of the whole group via LEADER
 
+        // once successed, start server
+        this.start();
+    }
+
+
+    public void start() throws Exception {
         synchronized (this) {
             if (started) {
                 return;
@@ -477,18 +482,24 @@ public class Node {
         // then let commitIndex = N （see 5.3, 5.4
         List<Long> matchIndexList = new ArrayList<>(matchIndexs.values());
         // no meaning when number of nodes <= 2
+
         int median = 0;
         if (matchIndexList.size() >= 2) {
             Collections.sort(matchIndexList);
             median = matchIndexList.size() / 2;
         }
-        Long N = matchIndexList.get(median);
-        if (N > commitIndex) {
-            LogEntry entry = logModule.read(N);
-            if (entry != null && entry.getTerm() == currentTerm) {
-                commitIndex = N;
+        if (matchIndexList.size() > 0) {
+            Long N = matchIndexList.get(median);
+            if (N > commitIndex) {
+                LogEntry entry = logModule.read(N);
+                if (entry != null && entry.getTerm() == currentTerm) {
+                    commitIndex = N;
+                }
             }
+        } else {
+            commitIndex = 0;
         }
+
 
         //  response to *client*
         if (success.get() >= (count / 2)) {
@@ -525,12 +536,13 @@ public class Node {
                 return;
             }
 
-            logger.info("LEADER heartbeat ...");
-
             long current = System.currentTimeMillis();
             if (current - preHeartBeatTime < heartBeatTick) {
                 return;
             }
+
+            logger.info("LEADER heartbeat ...");
+
             logger.info("");
             for (Peer peer : peerSet.getPeersWithOutSelf(selfAddr)) {
                 logger.info("Peer {} nextIndex={}", peer.getAddr(), nextIndexs.get(peer));

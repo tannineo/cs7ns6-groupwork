@@ -155,6 +155,7 @@ public class Node {
         this.peerSet = new PeerSet();
         this.peerSet.getList().add(new Peer(this.selfAddr));
 
+
         this.rServer = new RServer(this.config.port, this);
     }
 

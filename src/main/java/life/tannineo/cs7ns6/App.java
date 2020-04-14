@@ -1,6 +1,8 @@
 package life.tannineo.cs7ns6;
 
 import com.alibaba.fastjson.JSON;
+import life.tannineo.cs7ns6.consts.ReservedKeys;
+import life.tannineo.cs7ns6.consts.ResultString;
 import life.tannineo.cs7ns6.network.RClient;
 import life.tannineo.cs7ns6.node.Node;
 import life.tannineo.cs7ns6.node.NodeConfig;
@@ -9,6 +11,7 @@ import life.tannineo.cs7ns6.node.entity.network.ClientKVAck;
 import life.tannineo.cs7ns6.node.entity.network.ClientKVReq;
 import life.tannineo.cs7ns6.node.entity.network.Request;
 import life.tannineo.cs7ns6.node.entity.network.Response;
+import life.tannineo.cs7ns6.node.entity.reserved.PeerSet;
 import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,11 +161,21 @@ public class App {
             nodeConfig.setTargetHost(targetHost);
             nodeConfig.setTargetPort(Integer.parseInt(targetPort));
 
-            logger.debug("Server start with config: " + JSON.toJSONString(commandLine.getOptions()));
+            logger.debug("Server start with config: {}", JSON.toJSON(nodeConfig));
 
-            // start the node server
-            Node node = new Node(nodeConfig);
-            node.start();
+            if (!newGroup) {
+
+                // 1. get peerSet from LEADER
+
+
+                // 2. set peerSet from LEADER
+
+
+            } else {
+                // start the LEADER server
+                Node node = new Node(nodeConfig);
+                node.start();
+            }
         }
 
 
@@ -186,7 +199,7 @@ public class App {
     }
 
 
-    // region TODO operations
+    // region TODO test operations
     // operation: ip:port get KEY
     public static String operationGet(String addr, String key) {
         ClientKVReq obj = ClientKVReq.newBuilder().key(key).type(ClientKVReq.GET).build();
@@ -207,6 +220,28 @@ public class App {
 
         if (cmd == null) return "null";
         return cmd.getValue();
+    }
+
+    public static PeerSet getPeerSet(String addr) throws RuntimeException {
+        String peerSetStr = operationGet(addr, ReservedKeys.PEERSET);
+        PeerSet peerSet = null;
+        try {
+            peerSet = JSON.parseObject(peerSetStr, PeerSet.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error getting peerSet from LEADER " + addr);
+        }
+
+        if (peerSet == null) throw new RuntimeException("Error getting peerSet from LEADER " + addr);
+        return peerSet;
+    }
+
+    public static String setPeerSet(String addr, PeerSet peerSet) throws RuntimeException {
+        String result = operationSet(addr, ReservedKeys.PEERSET, JSON.toJSONString(peerSet));
+
+        if (!result.equals(ResultString.OK)) throw new RuntimeException("Error setting peerSet to LEADER " + addr);
+
+        return result;
     }
 
     // operation: ip:port set KEY VALUE

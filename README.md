@@ -79,8 +79,12 @@ The app has a google drive version and a desktop version.
 
 We choose to keep files inside the project repository.
 
+(Full access to shared files on GoogleDrive with `@tcd.ie` email account)
+
 ### Architecture
 
+See the drawio: https://drive.google.com/file/d/1RYOd_c0ogwHCJmh2QGspDIVrAs0cmVY9/view?usp=sharing
 
+###
 
 ## About

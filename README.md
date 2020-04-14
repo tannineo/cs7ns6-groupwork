@@ -35,6 +35,11 @@ $ sh compile.sh
 
 ### Run
 
+The builds of the code are divided into:
+
+- node (server): from `App.java`
+- client (TODO: no build script provided now): from ``
+
 Use `-h` or `--help` command to access the help.
 
 ```text
@@ -56,20 +61,18 @@ usage: KVNode.jar
 
 ### Server Command
 
-server command:
+server command, `ip:host` is to determine which SERVER/NODE is going to communicate:
 
-- `get KEY`
+- `ip:host get KEY`
   - get a value using the `KEY`
-- `set KEY VALUE`
+- `ip:host set KEY VALUE`
   - set `VALUE` to the `KEY`
-- `del KEY`
+- `ip:host del KEY`
   - delete using the `KEY`
-- `nra`
+- `ip:host nra`
   - give no response to all the server & no bi-direction communication
-- `nr NAME`
+- `ip:host nr NAME`
   - give no response to the server with name `NAME` & no bi-direction communication
-
-### Test
 
 ## Design
 
@@ -77,14 +80,24 @@ Graph drawing using [diagrams.net (draw.io)](https://app.diagrams.net/).
 
 The app has a google drive version and a desktop version.
 
-We choose to keep files inside the project repository.
-
-(Full access to shared files on GoogleDrive with `@tcd.ie` email account)
+We choose to keep `drawio` files inside the project repository.
 
 ### Architecture
 
-See the drawio: https://drive.google.com/file/d/1RYOd_c0ogwHCJmh2QGspDIVrAs0cmVY9/view?usp=sharing
+[see doc/drawio-architecture.xml](doc/drawio-architecture.xml)
 
-###
+As you can see from the , there are mainly 4 modules and 2 loops running in a node.
+
+#### Architecture - StateMachine
+
+#### Architecture - LogModule
+
+#### Architecture - Consensus
+
+#### Architecture - Communication
+
+#### Architecture - Loops
+
+## Test
 
 ## About

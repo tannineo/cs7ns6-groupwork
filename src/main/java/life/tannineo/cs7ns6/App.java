@@ -128,7 +128,7 @@ public class App {
                             logger.info("set " + inputArr[2] + "=" + operationSet(inputArr[0], inputArr[2], inputArr[3]));
                             break;
                         case "del":
-                            logger.info("get " + inputArr[2] + "=" + operationDel(inputArr[0], inputArr[2]));
+                            logger.info("del " + inputArr[2] + " " + operationDel(inputArr[0], inputArr[2]));
                             break;
                         case "nra":
                             logger.info("nra " + operationNoResponseToAll(inputArr[0]));
@@ -230,8 +230,7 @@ public class App {
 
     // operation: ip:port del KEY
     public static String operationDel(String addr, String key) {
-        String value = "NULL";
-        return value;
+        return operationSet(addr, key, null);
     }
 
     // operation: ip:port nra

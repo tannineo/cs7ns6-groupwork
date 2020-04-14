@@ -6,7 +6,7 @@ package life.tannineo.cs7ns6.consts;
 public interface ReservedKeys {
 
     /**
-     * peerlist
+     * key to store peerSet
      *
      * @see life.tannineo.cs7ns6.node.entity.reserved.PeerSet
      */

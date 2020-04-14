@@ -426,6 +426,7 @@ public class Node {
             return redirect(request);
         }
 
+        // directly GET
         if (request.getType() == ClientKVReq.GET) {
             LogEntry logEntry = stateMachine.get(request.getKey());
             if (logEntry != null) {
@@ -433,6 +434,8 @@ public class Node {
             }
             return new ClientKVAck(null);
         }
+
+        // SET need to commit changes
 
         LogEntry logEntry = LogEntry.newBuilder()
             .command(Command.newBuilder().
@@ -442,7 +445,7 @@ public class Node {
             .term(currentTerm)
             .build();
 
-        // TODO  pre-commit
+        // TODO: pre-commit?
         logModule.write(logEntry);
         logger.info("write logModule success, logEntry info : {}, log index : {}", logEntry, logEntry.getIndex());
 
@@ -453,7 +456,7 @@ public class Node {
         int count = 0;
         // replicate to other nodes
         for (Peer peer : peerSet.getPeersWithOutSelf(selfAddr)) {
-            // TODO check self and RaftThreadPool
+            // TODO: check self and RaftThreadPool
             count++;
             // concurent RPC
             futureList.add(replication(peer, logEntry));

@@ -18,6 +18,9 @@ public class ClientKVReq implements Serializable {
 
     public static int GET = 1;
 
+    // TODO: now only SUPPORT SET
+    public static int DEL = 2;
+
     int type;
 
     String key;
@@ -35,7 +38,7 @@ public class ClientKVReq implements Serializable {
     }
 
     public enum Type {
-        SET(0), GET(1);
+        SET(0), GET(1), DEL(2);
         int code;
 
         Type(int code) {

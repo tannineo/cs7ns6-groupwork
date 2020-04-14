@@ -31,7 +31,7 @@ public class Client {
                         logger.info("get " + inputArr[1] + " " + operationGet(inputArr[0], inputArr[2]));
                         break;
                     case "set":
-                        logger.info("set " + inputArr[1] + " " + operationSet(inputArr[0], inputArr[2], inputArr[3));
+                        logger.info("set " + inputArr[1] + " " + operationSet(inputArr[0], inputArr[2], inputArr[3]));
                         break;
                     case "del":
                         logger.info("get " + inputArr[1] + " " + operationDel(inputArr[0], inputArr[2]));

@@ -1,4 +1,4 @@
-package life.tannineo.cs7ns6.node.entity;
+package life.tannineo.cs7ns6.node.entity.reserved;
 
 import lombok.Getter;
 import lombok.Setter;

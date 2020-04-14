@@ -6,7 +6,6 @@ import life.tannineo.cs7ns6.network.RServer;
 import life.tannineo.cs7ns6.node.concurrent.RaftThreadPool;
 import life.tannineo.cs7ns6.node.entity.Command;
 import life.tannineo.cs7ns6.node.entity.LogEntry;
-import life.tannineo.cs7ns6.node.entity.Peer;
 import life.tannineo.cs7ns6.node.entity.ReplicationFail;
 import life.tannineo.cs7ns6.node.entity.network.ClientKVAck;
 import life.tannineo.cs7ns6.node.entity.network.ClientKVReq;
@@ -14,6 +13,8 @@ import life.tannineo.cs7ns6.node.entity.network.Request;
 import life.tannineo.cs7ns6.node.entity.network.Response;
 import life.tannineo.cs7ns6.node.entity.param.EntryParam;
 import life.tannineo.cs7ns6.node.entity.param.RevoteParam;
+import life.tannineo.cs7ns6.node.entity.reserved.Peer;
+import life.tannineo.cs7ns6.node.entity.reserved.PeerSet;
 import life.tannineo.cs7ns6.node.entity.result.EntryResult;
 import life.tannineo.cs7ns6.node.entity.result.RevoteResult;
 import life.tannineo.cs7ns6.util.Converter;
@@ -40,7 +41,12 @@ public class Node {
     // settings paresd from commandline
     private NodeConfig config;
 
-    String serverName;
+    /**
+     * TODO
+     * <p>
+     * ip:port
+     */
+    String selfAddr;
 
     /**
      * the state of node
@@ -141,18 +147,14 @@ public class Node {
         this.logger = LoggerFactory.getLogger(Node.class);
 
         this.config = nodeConfig;
-        this.serverName = nodeConfig.getName();
-        this.stateMachine = new StateMachine("./" + this.serverName + "_state/");
-        this.logModule = new LogModule("./" + this.serverName + "_log/");
+        this.selfAddr = nodeConfig.getName();
+        this.stateMachine = new StateMachine("./" + this.selfAddr + "_state/");
+        this.logModule = new LogModule("./" + this.selfAddr + "_log/");
         this.peerSet = new PeerSet();
 
         for (String s : config.getPeers()) {
             Peer peer = new Peer(s);
-            peerSet.addPeer(peer);
             // TODO: HARDCODED localhost
-            if (s.equals("localhost:" + config.getPort())) {
-                peerSet.setSelf(peer);
-            }
         }
 
         this.rServer = new RServer(this.config.port, this);
@@ -179,7 +181,7 @@ public class Node {
 
             started = true;
 
-            logger.info("start success, selfId : {} \n with config {}", peerSet.getSelf(), config);
+            logger.info("start success, selfId : {} \n with config {}", this.selfAddr, config);
         }
         // endregion
     }
@@ -230,7 +232,7 @@ public class Node {
     private void becomeLeaderToDoThing() {
         nextIndexs = new ConcurrentHashMap<>();
         matchIndexs = new ConcurrentHashMap<>();
-        for (Peer peer : peerSet.getPeersWithOutSelf()) {
+        for (Peer peer : peerSet.getPeersWithOutSelf(selfAddr)) {
             nextIndexs.put(peer, logModule.getLastIndex() + 1);
             matchIndexs.put(peer, 0L);
         }
@@ -239,7 +241,7 @@ public class Node {
     private void tryApplyStateMachine(ReplicationFail fail) {
 
         String success = stateMachine.getString(fail.successKey);
-        stateMachine.setString(fail.successKey, String.valueOf(Integer.valueOf(success) + 1));
+        stateMachine.setString(fail.successKey, success + 1);
 
         String count = stateMachine.getString(fail.countKey);
 
@@ -292,7 +294,7 @@ public class Node {
                     EntryParam entryParam = new EntryParam();
                     entryParam.setTerm(currentTerm);
                     entryParam.setServerId(peer.getAddr());
-                    entryParam.setLeaderId(peerSet.getSelf().getAddr());
+                    entryParam.setLeaderId(selfAddr);
 
                     entryParam.setLeaderCommit(commitIndex);
 
@@ -415,7 +417,7 @@ public class Node {
 
         if (!state.equals(NodeState.LEADER)) {
             logger.warn("I not am leader , only invoke redirect method, leader addr : {}, my addr : {}",
-                peerSet.getLeader(), peerSet.getSelf().getAddr());
+                peerSet.getLeader(), selfAddr);
             return redirect(request);
         }
 
@@ -445,7 +447,7 @@ public class Node {
 
         int count = 0;
         // replicate to other nodes
-        for (Peer peer : peerSet.getPeersWithOutSelf()) {
+        for (Peer peer : peerSet.getPeersWithOutSelf(selfAddr)) {
             // TODO check self and RaftThreadPool
             count++;
             // concurent RPC
@@ -530,18 +532,18 @@ public class Node {
                 return;
             }
             logger.info("");
-            for (Peer peer : peerSet.getPeersWithOutSelf()) {
+            for (Peer peer : peerSet.getPeersWithOutSelf(selfAddr)) {
                 logger.info("Peer {} nextIndex={}", peer.getAddr(), nextIndexs.get(peer));
             }
 
             preHeartBeatTime = System.currentTimeMillis();
 
             // heartbeat only focus on term and leaderID
-            for (Peer peer : peerSet.getPeersWithOutSelf()) {
+            for (Peer peer : peerSet.getPeersWithOutSelf(selfAddr)) {
 
                 EntryParam param = EntryParam.builder()
                     .entries(null) // null for heartbeat
-                    .leaderId(peerSet.getSelf().getAddr())
+                    .leaderId(selfAddr)
                     .serverId(peer.getAddr())
                     .term(currentTerm)
                     .build();
@@ -624,15 +626,15 @@ public class Node {
             }
             state = NodeState.CANDIDATE;
             logger.error("node {} will become CANDIDATE and start election leader, current term : [{}], LastEntry : [{}]",
-                peerSet.getSelf(), currentTerm, logModule.getLast());
+                selfAddr, currentTerm, logModule.getLast());
 
             preElectionTime = System.currentTimeMillis() + ThreadLocalRandom.current().nextInt(200) + 150;
 
             currentTerm += 1;
             // vote self
-            votedFor = peerSet.getSelf().getAddr();
+            votedFor = selfAddr;
 
-            List<Peer> peers = peerSet.getPeersWithOutSelf();
+            List<Peer> peers = peerSet.getPeersWithOutSelf(selfAddr);
 
             ArrayList<Future> futureArrayList = new ArrayList<>();
 
@@ -652,7 +654,7 @@ public class Node {
 
                         RevoteParam param = RevoteParam.newBuilder().
                             term(currentTerm).
-                            candidateId(peerSet.getSelf().getAddr()).
+                            candidateId(selfAddr).
                             lastLogIndex(Converter.convert(logModule.getLastIndex())).
                             lastLogTerm(lastTerm).
                             build();
@@ -722,15 +724,15 @@ public class Node {
             }
 
             int success = success2.get();
-            logger.info("node {} maybe become leader , success count = {} , status : {}", peerSet.getSelf(), success, state);
+            logger.info("node {} maybe become leader , success count = {} , status : {}", selfAddr, success, state);
             // appendEntry from other node (LEADER), itself may become the FOLLOWER
             if (state.equals(NodeState.FOLLOWER)) {
                 return;
             }
             if (success >= peers.size() / 2) {
-                logger.warn("node {} become leader ", peerSet.getSelf());
+                logger.warn("node: {} become leader ", selfAddr);
                 state = NodeState.LEADER;
-                peerSet.setLeader(peerSet.getSelf());
+                peerSet.setLeader(new Peer(selfAddr));
                 votedFor = "";
                 becomeLeaderToDoThing();
             } else {

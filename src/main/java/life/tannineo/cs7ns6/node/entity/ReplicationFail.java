@@ -1,5 +1,7 @@
 package life.tannineo.cs7ns6.node.entity;
 
+import life.tannineo.cs7ns6.node.entity.reserved.Peer;
+
 import java.util.concurrent.Callable;
 
 /**

@@ -2,9 +2,9 @@ package life.tannineo.cs7ns6.node;
 
 import life.tannineo.cs7ns6.consts.NodeState;
 import life.tannineo.cs7ns6.node.entity.LogEntry;
-import life.tannineo.cs7ns6.node.entity.Peer;
 import life.tannineo.cs7ns6.node.entity.param.EntryParam;
 import life.tannineo.cs7ns6.node.entity.param.RevoteParam;
+import life.tannineo.cs7ns6.node.entity.reserved.Peer;
 import life.tannineo.cs7ns6.node.entity.result.EntryResult;
 import life.tannineo.cs7ns6.node.entity.result.RevoteResult;
 import lombok.Getter;
@@ -54,8 +54,8 @@ public class Consensus {
             }
 
             // (current node did not vote, or voted for that node) && that node's logs are up to date
-            logger.info("node {} current vote for [{}], param candidateId : {}", node.peerSet.getSelf(), node.getVotedFor(), param.getCandidateId());
-            logger.info("node {} current term {}, peer term : {}", node.peerSet.getSelf(), node.getCurrentTerm(), param.getTerm());
+            logger.info("node {} current vote for [{}], param candidateId : {}", node.selfAddr, node.getVotedFor(), param.getCandidateId());
+            logger.info("node {} current term {}, peer term : {}", node.selfAddr, node.getCurrentTerm(), param.getTerm());
 
             if (StringUtils.isEmpty(node.getVotedFor()) || node.getVotedFor().equals(param.getCandidateId())) {
 
@@ -118,7 +118,7 @@ public class Consensus {
             // if term is newer, try to become leader
             if (param.getTerm() >= node.getCurrentTerm()) {
                 logger.debug("node {} become FOLLOWER, currentTerm : {}, param Term : {}, param serverId",
-                    node.peerSet.getSelf(), node.currentTerm, param.getTerm(), param.getServerId());
+                    node.selfAddr, node.currentTerm, param.getTerm(), param.getServerId());
                 // give up
                 node.state = NodeState.FOLLOWER;
             }

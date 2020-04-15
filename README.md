@@ -101,4 +101,30 @@ As you can see from the , there are mainly 4 modules and 2 loops running in a no
 
 ## Test
 
+```
+localhost:4111 setFail localhost:4114
+localhost:4112 setFail localhost:4114
+localhost:4113 setFail localhost:4114
+localhost:4114 setFail localhost:4111
+localhost:4114 setFail localhost:4112
+localhost:4114 setFail localhost:4113
+
+```
+
+```
+localhost:4111 setFail localhost:4115
+localhost:4111 setFail localhost:4114
+localhost:4112 setFail localhost:4115
+localhost:4112 setFail localhost:4114
+localhost:4113 setFail localhost:4115
+localhost:4113 setFail localhost:4114
+localhost:4114 setFail localhost:4111
+localhost:4114 setFail localhost:4112
+localhost:4114 setFail localhost:4113
+localhost:4115 setFail localhost:4111
+localhost:4115 setFail localhost:4112
+localhost:4115 setFail localhost:4113
+
+```
+
 ## About

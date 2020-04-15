@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class App {
 
@@ -42,6 +44,8 @@ public class App {
     private static String CLIENT_MODE_LONG = "client";
 
     private final static RClient CLIENT = new RClient();
+
+    public static ExecutorService executor = Executors.newFixedThreadPool(20);
 
     public static void main(String[] args) throws Exception {
         // the entrance of the server
@@ -109,35 +113,42 @@ public class App {
             // region watch the commandline input
             Scanner sc = new Scanner(System.in);
             while (sc.hasNext()) {
+
                 String input = sc.nextLine();
-                logger.debug("You just input:\n" + input);
+                String[] splited = input.trim().split("\n");
 
-                String[] inputArr = input.trim().split(" ");
+                for (String str : splited) {
+                    executor.submit(() -> {
 
-                try {
-                    switch (inputArr[1]) {
-                        case "to": // TODO
-                            break;
-                        case "get":
-                            logger.info("get " + inputArr[2] + "=" + operationGet(inputArr[0], inputArr[2]));
-                            break;
-                        case "set":
-                            logger.info("set " + inputArr[2] + "=" + operationSet(inputArr[0], inputArr[2], inputArr[3]));
-                            break;
-                        case "del":
-                            logger.info("del " + inputArr[2] + " " + operationDel(inputArr[0], inputArr[2]));
-                            break;
-                        case "setFail":
-                            logger.info("setFail " + inputArr[2] + " " + operationNoResponseTo(inputArr[0], inputArr[2]));
-                            break;
-                        default:
-                            logger.warn("Command parsing error...");
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                        logger.debug("You just input:\n" + str);
+
+                        String[] inputArr = str.trim().split(" ");
+
+                        try {
+                            switch (inputArr[1]) {
+                                case "to": // TODO
+                                    break;
+                                case "get":
+                                    logger.info("get " + inputArr[2] + "=" + operationGet(inputArr[0], inputArr[2]));
+                                    break;
+                                case "set":
+                                    logger.info("set " + inputArr[2] + "=" + operationSet(inputArr[0], inputArr[2], inputArr[3]));
+                                    break;
+                                case "del":
+                                    logger.info("del " + inputArr[2] + " " + operationDel(inputArr[0], inputArr[2]));
+                                    break;
+                                case "setFail":
+                                    logger.info("setFail " + inputArr[2] + " " + operationNoResponseTo(inputArr[0], inputArr[2]));
+                                    break;
+                                default:
+                                    logger.warn("Command parsing error...");
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
                 }
             }
-
             // endregion
         } else {
             /**

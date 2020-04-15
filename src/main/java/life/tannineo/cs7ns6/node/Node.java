@@ -538,11 +538,11 @@ public class Node {
      */
     public synchronized ClientKVAck handlerClientRequest(ClientKVReq request) {
 
-        logger.warn("handlerClientRequest handler {} operation,  and key : [{}], value : [{}]",
+        logger.warn("handlerClientRequest handling {} operation,  and key: {}, value: {}",
             ClientKVReq.Type.value(request.getType()), request.getKey(), request.getValue());
 
         if (!state.equals(NodeState.LEADER)) {
-            logger.warn("I not am leader , only invoke redirect method, leader addr : {}, my addr : {}",
+            logger.warn("I not am leader , only invoke redirect method, leader addr: {}, my addr: {}",
                 peerSet.getLeader(), selfAddr);
             return redirect(request);
         }
@@ -878,6 +878,8 @@ public class Node {
                     } catch (Exception e) {
                         e.printStackTrace();
                         logger.error("ElectionTask RPC Fail , URL : " + request.getUrl());
+                        // TODO: directly remove from peerSet, dangerous
+                        peerSet.getList().remove(new Peer(request.getUrl()));
                         return null;
                     }
                 }));

@@ -39,7 +39,6 @@ public class StateMachine {
                 Options options = new Options();
                 options.setCreateIfMissing(true);
                 machineDb = RocksDB.open(options, dbDir);
-
             } catch (RocksDBException e) {
                 logger.info(e.getMessage());
             }

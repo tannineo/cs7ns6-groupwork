@@ -278,6 +278,7 @@ usage: KVNode.jar
 <pre><code class="language-text"><code><div>localhost:4111 get foo
 </div></code></code></pre>
 <h3 id="test-routine--result">Test Routine &amp; Result</h3>
+<p>For easy recognition the log prefixes with dates and class names (<code>12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App</code>) are omitted.</p>
 <ol>
 <li>
 <p>Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.</p>
@@ -294,20 +295,20 @@ localhost:4113 get foo
 </div></code></code></pre>
 <p>We can see that we can get / set on different nodes.</p>
 <pre><code class="language-text"><code><div>...
-12:19:37.872 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - You just input:
+- You just input:
 localhost:4112 get foo
-12:19:43.045 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4112, put response : ClientKVAck(result=null)
-12:19:43.046 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - get foo=null
+- request content : foo, url : localhost:4112, put response : ClientKVAck(result=null)
+- get foo=null
 localhost:4111 set foo bar
-12:19:49.792 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - You just input:
+- You just input:
 localhost:4111 set foo bar
-12:19:49.849 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - request content : foo=bar, url : localhost:4111, put response : ClientKVAck(result=ok)
-12:19:49.849 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - set foo ok
+- request content : foo=bar, url : localhost:4111, put response : ClientKVAck(result=ok)
+- set foo ok
 localhost:4113 get foo
-12:19:54.990 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - You just input:
+- You just input:
 localhost:4113 get foo
-12:19:55.007 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4113, put response : ClientKVAck(result=Command(opt=null, key=foo, value=bar))
-12:19:55.007 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - get foo=bar
+- request content : foo, url : localhost:4113, put response : ClientKVAck(result=Command(opt=null, key=foo, value=bar))
+- get foo=bar
 </div></code></code></pre>
 </li>
 <li>
@@ -320,10 +321,10 @@ localhost:4113 get foo
 <p>We can get <code>barbar</code>, the new data.</p>
 <pre><code class="language-text"><code><div>...
 localhost:4111 get foo
-12:07:42.285 [pool-1-thread-2] INFO life.tannineo.cs7ns6.App - You just input:
+- You just input:
 localhost:4111 get foo
-12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4111, put response : ClientKVAck(result=Command(opt=null, key=foo, value=barbar))
-12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - get foo=barbar
+- request content : foo, url : localhost:4111, put response : ClientKVAck(result=Command(opt=null, key=foo, value=barbar))
+- get foo=barbar
 </div></code></code></pre>
 </li>
 <li>
@@ -354,22 +355,22 @@ localhost:4115 setFail localhost:4114
 </div></code></code></pre>
 <p>The node are divided into <code>4111 &amp; 4112 | 4113 &amp; 4114 | 4115</code>. n = 3</p>
 <pre><code class="language-text"><code><div>...
-12:45:31.059 [pool-1-thread-10] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -&gt; true
-12:45:31.059 [pool-1-thread-4] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -&gt; true
-12:45:31.059 [pool-1-thread-11] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -&gt; true
-12:45:31.059 [pool-1-thread-7] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -&gt; true
-12:45:31.059 [pool-1-thread-12] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -&gt; true
-12:45:31.060 [pool-1-thread-5] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -&gt; true
-12:45:31.060 [pool-1-thread-8] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -&gt; true
-12:45:31.060 [pool-1-thread-9] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -&gt; true
-12:45:31.060 [pool-1-thread-6] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -&gt; true
-12:45:31.074 [pool-1-thread-15] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -&gt; true
-12:45:31.075 [pool-1-thread-16] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -&gt; true
-12:45:31.075 [pool-1-thread-14] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -&gt; true
-12:45:31.075 [pool-1-thread-13] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -&gt; true
-12:45:31.075 [pool-1-thread-17] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -&gt; true
-12:45:31.075 [pool-1-thread-18] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -&gt; true
-12:45:31.319 [pool-1-thread-19] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -&gt; true
+- setFail localhost:4111 ok -&gt; true
+- setFail localhost:4113 ok -&gt; true
+- setFail localhost:4112 ok -&gt; true
+- setFail localhost:4113 ok -&gt; true
+- setFail localhost:4115 ok -&gt; true
+- setFail localhost:4114 ok -&gt; true
+- setFail localhost:4114 ok -&gt; true
+- setFail localhost:4115 ok -&gt; true
+- setFail localhost:4115 ok -&gt; true
+- setFail localhost:4115 ok -&gt; true
+- setFail localhost:4111 ok -&gt; true
+- setFail localhost:4112 ok -&gt; true
+- setFail localhost:4111 ok -&gt; true
+- setFail localhost:4112 ok -&gt; true
+- setFail localhost:4113 ok -&gt; true
+- setFail localhost:4114 ok -&gt; true
 
 </div></code></code></pre>
 <p><code>true</code> means start blocking. Execute the same command again to turn it into <code>false</code> (like a switch).</p>

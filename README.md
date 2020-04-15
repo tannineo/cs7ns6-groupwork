@@ -275,6 +275,8 @@ localhost:4111 get foo
 
 ### Test Routine & Result
 
+For easy recognition the log prefixes with dates and class names (`12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App`) are omitted.
+
 1. Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.
 
     ```text
@@ -295,20 +297,20 @@ localhost:4111 get foo
 
     ```text
     ...
-    12:19:37.872 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - You just input:
+    - You just input:
     localhost:4112 get foo
-    12:19:43.045 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4112, put response : ClientKVAck(result=null)
-    12:19:43.046 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - get foo=null
+    - request content : foo, url : localhost:4112, put response : ClientKVAck(result=null)
+    - get foo=null
     localhost:4111 set foo bar
-    12:19:49.792 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - You just input:
+    - You just input:
     localhost:4111 set foo bar
-    12:19:49.849 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - request content : foo=bar, url : localhost:4111, put response : ClientKVAck(result=ok)
-    12:19:49.849 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - set foo ok
+    - request content : foo=bar, url : localhost:4111, put response : ClientKVAck(result=ok)
+    - set foo ok
     localhost:4113 get foo
-    12:19:54.990 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - You just input:
+    - You just input:
     localhost:4113 get foo
-    12:19:55.007 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4113, put response : ClientKVAck(result=Command(opt=null, key=foo, value=bar))
-    12:19:55.007 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - get foo=bar
+    - request content : foo, url : localhost:4113, put response : ClientKVAck(result=Command(opt=null, key=foo, value=bar))
+    - get foo=bar
     ```
 
 3. Close `localhost:4111`, wait for about 10 sec (election task timeout), the rest 2 nodes will go for election. Then update data on `localhost:4112`:
@@ -328,10 +330,10 @@ localhost:4111 get foo
     ```text
     ...
     localhost:4111 get foo
-    12:07:42.285 [pool-1-thread-2] INFO life.tannineo.cs7ns6.App - You just input:
+    - You just input:
     localhost:4111 get foo
-    12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4111, put response : ClientKVAck(result=Command(opt=null, key=foo, value=barbar))
-    12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - get foo=barbar
+    - request content : foo, url : localhost:4111, put response : ClientKVAck(result=Command(opt=null, key=foo, value=barbar))
+    - get foo=barbar
     ```
 
 4. For partition, we test it on a 5-instance cluster. **Remove all the disk files generated for clean experiment**, and start 5 nodes.
@@ -369,22 +371,22 @@ localhost:4111 get foo
 
     ```text
     ...
-    12:45:31.059 [pool-1-thread-10] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -> true
-    12:45:31.059 [pool-1-thread-4] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -> true
-    12:45:31.059 [pool-1-thread-11] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -> true
-    12:45:31.059 [pool-1-thread-7] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -> true
-    12:45:31.059 [pool-1-thread-12] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -> true
-    12:45:31.060 [pool-1-thread-5] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -> true
-    12:45:31.060 [pool-1-thread-8] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -> true
-    12:45:31.060 [pool-1-thread-9] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -> true
-    12:45:31.060 [pool-1-thread-6] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -> true
-    12:45:31.074 [pool-1-thread-15] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -> true
-    12:45:31.075 [pool-1-thread-16] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -> true
-    12:45:31.075 [pool-1-thread-14] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -> true
-    12:45:31.075 [pool-1-thread-13] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -> true
-    12:45:31.075 [pool-1-thread-17] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -> true
-    12:45:31.075 [pool-1-thread-18] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -> true
-    12:45:31.319 [pool-1-thread-19] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -> true
+    - setFail localhost:4111 ok -> true
+    - setFail localhost:4113 ok -> true
+    - setFail localhost:4112 ok -> true
+    - setFail localhost:4113 ok -> true
+    - setFail localhost:4115 ok -> true
+    - setFail localhost:4114 ok -> true
+    - setFail localhost:4114 ok -> true
+    - setFail localhost:4115 ok -> true
+    - setFail localhost:4115 ok -> true
+    - setFail localhost:4115 ok -> true
+    - setFail localhost:4111 ok -> true
+    - setFail localhost:4112 ok -> true
+    - setFail localhost:4111 ok -> true
+    - setFail localhost:4112 ok -> true
+    - setFail localhost:4113 ok -> true
+    - setFail localhost:4114 ok -> true
 
     ```
 

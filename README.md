@@ -47,9 +47,6 @@ $ java -jar KVNode.jar -h
 usage: KVNode.jar
  -c,--client              Initiate as a client.
  -h,--help                Help
- -n,--name <arg>          The name of the server, omit to use a timestamped
-                          name. The server will read the persistent files (data,
-                          logs) due to the name.
  -o,--host <arg>          The host of server
  -p,--port <arg>          The port of server listening to
  -t,--target-host <arg>   The host of target server to join, omit this or
@@ -60,9 +57,25 @@ usage: KVNode.jar
                           the leader)
 ```
 
-### Server Command
+To run client, use:
 
-server command, `ip:port` is to determine which SERVER/NODE is going to communicate:
+```text
+$ KVNODENAME=CLIENT java -jar KVNode.jar -c
+```
+
+To run a server node, use: (where `4111` is the port listening, while `4110` is the target/leader port)
+
+```text
+$ KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y 4110
+```
+
+The host `localhost` is omitted.
+
+The env variable `KVNODENAME` is for logs and data persistence on the file system.
+
+### Client Command
+
+`ip:port` is to determine which SERVER/NODE is going to communicate:
 
 - `ip:port get KEY`
   - get a value using the `KEY`
@@ -72,6 +85,12 @@ server command, `ip:port` is to determine which SERVER/NODE is going to communic
   - delete using the `KEY`
 - `ip:port setFail ip2:port2`
   - give no response (fail the request handling) to the server `ip2:port2`
+
+For example, getting a value of key `foo` from a node:
+
+```text
+localhost:4111 get foo
+```
 
 ## Design
 

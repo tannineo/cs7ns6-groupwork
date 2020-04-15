@@ -18,16 +18,8 @@
         </encoder>
     </appender>
 
-    <appender name="kvStoreLogError" class="ch.qos.logback.core.FileAppender">
-        <file>${KVNODENAME}-error.log</file>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{35} - %msg%n</pattern>
-        </encoder>
-    </appender>
-
-    <root level="debug">
+    <root level="info">
         <appender-ref ref="kvStoreLog"/>
-        <appender-ref ref="kvStoreLogError"/>
         <appender-ref ref="CONSOLE"/>
     </root>
 

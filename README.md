@@ -9,10 +9,10 @@ This is a groupwork for CS7NS6 - Distributed Systems, 2020.
     - [Run](#run)
     - [Caveats](#caveats)
     - [Client Command](#client-command)
-  - [Design](#design)
+  - [Design & Specification](#design--specification)
     - [Architecture](#architecture)
   - [Test](#test)
-  - [About](#about)
+  - [Personal Contribution](#personal-contribution)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -124,7 +124,7 @@ For example, getting a value of key `foo` from a node(`localhost:4111`):
 localhost:4111 get foo
 ```
 
-## Design
+## Design & Specification
 
 Graph drawing using [diagrams.net (draw.io)](https://app.diagrams.net/).
 
@@ -148,12 +148,113 @@ As you can see, there are mainly 4 modules and 2 loops running in a node.
     $ KVNODENAME=4113 java -jar KVNode.jar -p 4113 -y 4111
     ```
 
-   - Service management 4/4
-2. Start a 3-instance cluster with leader first decided, use the client to execute the command:
-3.
+2. Start a 3-instance cluster with leader first decided, use the client to execute the command *one by one*:
 
+    ```text
+    localhost:4112 get foo
+    localhost:4111 set foo bar
+    localhost:4113 get foo
+    ```
 
+    We can see that we can get / set on different nodes.
 
-## About
+    ```text
+    ...
+    12:19:37.872 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - You just input:
+    localhost:4112 get foo
+    12:19:43.045 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4112, put response : ClientKVAck(result=null)
+    12:19:43.046 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - get foo=null
+    localhost:4111 set foo bar
+    12:19:49.792 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - You just input:
+    localhost:4111 set foo bar
+    12:19:49.849 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - request content : foo=bar, url : localhost:4111, put response : ClientKVAck(result=ok)
+    12:19:49.849 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - set foo ok
+    localhost:4113 get foo
+    12:19:54.990 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - You just input:
+    localhost:4113 get foo
+    12:19:55.007 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4113, put response : ClientKVAck(result=Command(opt=null, key=foo, value=bar))
+    12:19:55.007 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - get foo=bar
+    ```
 
-[Chao Chen](https://github.com/tannineo)
+3. Close `localhost:4111`, wait for about 10 sec (election task timeout), the rest 2 nodes will go for election. Then update data on `localhost:4112`:
+
+    ```text
+    localhost:4112 set foo barbar
+    ```
+
+    When successed, start `localhost:4111` to join the cluster as a follower: `KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y ?WHOSTHELEADER?`, we can see the index persist and then updated by 1 when join the cluster (because we did one change). Then execute query on client:
+
+    ```text
+    localhost:4111 get foo
+    ```
+
+    We can get `barbar`, the new data.
+
+    ```text
+    ...
+    localhost:4111 get foo
+    12:07:42.285 [pool-1-thread-2] INFO life.tannineo.cs7ns6.App - You just input:
+    localhost:4111 get foo
+    12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4111, put response : ClientKVAck(result=Command(opt=null, key=foo, value=barbar))
+    12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - get foo=barbar
+    ```
+
+4. For partition, we test it on a 5-instance cluster. **Remove all the disk files generated**, and start 5 nodes.
+
+    ```text
+    $ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
+    $ KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111
+    $ KVNODENAME=4113 java -jar KVNode.jar -p 4113 -y 4111
+    $ KVNODENAME=4114 java -jar KVNode.jar -p 4114 -y 4111
+    $ KVNODENAME=4115 java -jar KVNode.jar -p 4115 -y 4111
+    ```
+
+    In the client, we execute the commands in batch (the client command executor is also implemented concurrently, and can parse multiple lines).
+
+    ```text
+    localhost:4111 setFail localhost:4113
+    localhost:4111 setFail localhost:4114
+    localhost:4111 setFail localhost:4115
+    localhost:4112 setFail localhost:4113
+    localhost:4112 setFail localhost:4114
+    localhost:4112 setFail localhost:4115
+    localhost:4113 setFail localhost:4111
+    localhost:4113 setFail localhost:4112
+    localhost:4113 setFail localhost:4115
+    localhost:4114 setFail localhost:4111
+    localhost:4114 setFail localhost:4112
+    localhost:4114 setFail localhost:4115
+    localhost:4115 setFail localhost:4111
+    localhost:4115 setFail localhost:4112
+    localhost:4115 setFail localhost:4113
+    localhost:4115 setFail localhost:4114
+    ```
+
+    The node are divided into `4111 & 4112`, `4113 & 4114`, `4115`. n = 3
+
+    ```text
+    ...
+    12:45:31.059 [pool-1-thread-10] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -> true
+    12:45:31.059 [pool-1-thread-4] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -> true
+    12:45:31.059 [pool-1-thread-11] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -> true
+    12:45:31.059 [pool-1-thread-7] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -> true
+    12:45:31.059 [pool-1-thread-12] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -> true
+    12:45:31.060 [pool-1-thread-5] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -> true
+    12:45:31.060 [pool-1-thread-8] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -> true
+    12:45:31.060 [pool-1-thread-9] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -> true
+    12:45:31.060 [pool-1-thread-6] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -> true
+    12:45:31.074 [pool-1-thread-15] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -> true
+    12:45:31.075 [pool-1-thread-16] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -> true
+    12:45:31.075 [pool-1-thread-14] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -> true
+    12:45:31.075 [pool-1-thread-13] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -> true
+    12:45:31.075 [pool-1-thread-17] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -> true
+    12:45:31.075 [pool-1-thread-18] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -> true
+    12:45:31.319 [pool-1-thread-19] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -> true
+
+    ```
+
+    `true` means start blocking. Execute the same command again to turn it into `false` (like a switch).
+
+    Wait fot election happens among the nodes.
+
+## Personal Contribution

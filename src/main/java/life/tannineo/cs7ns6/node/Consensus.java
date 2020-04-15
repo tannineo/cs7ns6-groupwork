@@ -117,7 +117,7 @@ public class Consensus {
 
             // if term is newer, try to become leader
             if (param.getTerm() >= node.getCurrentTerm()) {
-                logger.debug("node {} become FOLLOWER, currentTerm : {}, param Term : {}, param serverId",
+                logger.info("node {} become FOLLOWER, currentTerm : {}, param Term : {}, param serverId",
                     node.selfAddr, node.currentTerm, param.getTerm(), param.getServerId());
                 // give up
                 node.state = NodeState.FOLLOWER;

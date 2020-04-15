@@ -120,7 +120,7 @@ public class App {
                 for (String str : splited) {
                     executor.submit(() -> {
 
-                        logger.debug("You just input:\n" + str);
+                        logger.info("You just input:\n" + str);
 
                         String[] inputArr = str.trim().split(" ");
 
@@ -132,7 +132,7 @@ public class App {
                                     logger.info("get " + inputArr[2] + "=" + operationGet(inputArr[0], inputArr[2]));
                                     break;
                                 case "set":
-                                    logger.info("set " + inputArr[2] + "=" + operationSet(inputArr[0], inputArr[2], inputArr[3]));
+                                    logger.info("set " + inputArr[2] + " " + operationSet(inputArr[0], inputArr[2], inputArr[3]));
                                     break;
                                 case "del":
                                     logger.info("del " + inputArr[2] + " " + operationDel(inputArr[0], inputArr[2]));
@@ -163,7 +163,7 @@ public class App {
             nodeConfig.setTargetHost(targetHost);
             nodeConfig.setTargetPort(Integer.parseInt(targetPort));
 
-            logger.debug("Server start with config: {}", JSON.toJSON(nodeConfig));
+            logger.info("Server start with config: {}", JSON.toJSON(nodeConfig));
 
             Node node = new Node(nodeConfig);
             if (!newGroup) {

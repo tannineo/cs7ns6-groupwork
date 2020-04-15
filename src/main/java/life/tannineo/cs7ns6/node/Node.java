@@ -98,7 +98,7 @@ public class Node {
 
 
     // region timeouts
-    public volatile long electionTime = 15 * 1000; // timeout between elections
+    public volatile long electionTime = 10 * 1000; // timeout between elections
     public volatile long preElectionTime = 0;      // the timestamp of last election
 
     public volatile long preHeartBeatTime = 0;   // the timestamp of last heartbeat
@@ -435,7 +435,6 @@ public class Node {
 
                 entryParam.setLeaderCommit(commitIndex);
 
-
                 // First RPC after becoming the LEADER
                 Long nextIndex = nextIndexs.get(pPeer);
                 if (nextIndex == null) nextIndex = 0L;
@@ -704,6 +703,7 @@ public class Node {
         // TODO: update peerSet directly, can be dangerous
         if (add) {
             peerSet.getList().add(change.modifiedPeer);
+            // initalizing indexing
             nextIndexs.putIfAbsent(change.modifiedPeer, logModule.getLastIndex() + 1);
             matchIndexs.putIfAbsent(change.modifiedPeer, 0L);
         } else {
@@ -762,8 +762,6 @@ public class Node {
             }
 
             logger.info("LEADER heartbeat ...");
-
-            logger.info("");
             for (Peer peer : peerSet.getPeersWithOutSelf(selfAddr)) {
                 logger.info("Peer {} nextIndex={}", peer.getAddr(), nextIndexs.get(peer));
             }

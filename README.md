@@ -62,18 +62,16 @@ usage: KVNode.jar
 
 ### Server Command
 
-server command, `ip:host` is to determine which SERVER/NODE is going to communicate:
+server command, `ip:port` is to determine which SERVER/NODE is going to communicate:
 
-- `ip:host get KEY`
+- `ip:port get KEY`
   - get a value using the `KEY`
-- `ip:host set KEY VALUE`
+- `ip:port set KEY VALUE`
   - set `VALUE` to the `KEY`
-- `ip:host del KEY`
+- `ip:port del KEY`
   - delete using the `KEY`
-- `ip:host nra`
-  - give no response to all the server & no bi-direction communication
-- `ip:host nr NAME`
-  - give no response to the server with name `NAME` & no bi-direction communication
+- `ip:port setFail ip2:port2`
+  - give no response (fail the request handling) to the server `ip2:port2`
 
 ## Design
 
@@ -101,6 +99,8 @@ As you can see from the , there are mainly 4 modules and 2 loops running in a no
 
 ## Test
 
+1. start a 3-instance cluster
+
 ```
 localhost:4111 setFail localhost:4114
 localhost:4112 setFail localhost:4114
@@ -110,6 +110,8 @@ localhost:4114 setFail localhost:4112
 localhost:4114 setFail localhost:4113
 
 ```
+
+2.
 
 ```
 localhost:4111 setFail localhost:4115

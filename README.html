@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>cs7ns6-groupwork</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        <link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+    </head>
+    <body class="vscode-light">
+        <h1 id="cs7ns6-groupwork">cs7ns6-groupwork</h1>
+<p>CS7NS6 Distributed Systems 2019-20
+Exercise 2</p>
+<p>Implementing a Replicated Service Using Process Groups</p>
+<p>Final Report by Chao Chen - 19310133</p>
+<ul>
+<li><a href="#cs7ns6-groupwork">cs7ns6-groupwork</a>
+<ul>
+<li><a href="#introduciton">Introduciton</a></li>
+<li><a href="#requirements">Requirements</a></li>
+<li><a href="#specifications">Specifications</a>
+<ul>
+<li><a href="#architecture">Architecture</a></li>
+</ul>
+</li>
+<li><a href="#implementation">Implementation</a></li>
+<li><a href="#individual-contribution">Individual Contribution</a></li>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#how-to">How to</a>
+<ul>
+<li><a href="#compile">Compile</a></li>
+<li><a href="#run">Run</a></li>
+<li><a href="#caveats">Caveats</a></li>
+<li><a href="#client-command">Client Command</a></li>
+</ul>
+</li>
+<li><a href="#test">Test</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="introduciton">Introduciton</h2>
+<p>This project aim to implement a distributed key-value store based on the RAFT algorithm.</p>
+<p>A introduction about the RAFT algorithm can be found <a href="https://raft.github.io/">here</a>.</p>
+<p>The original paper is <a href="https://raft.github.io/raft.pdf">here</a> with the bibliography.</p>
+<blockquote>
+<p>Ongaro, Diego, and John Ousterhout. &quot;In search of an understandable consensus algorithm.&quot; 2014 {USENIX} Annual Technical Conference ({USENIX}{ATC} 14). 2014.</p>
+</blockquote>
+<pre><code class="language-bib"><code><div>@misc{ongaro2013search,
+  title={In search of an understandable consensus algorithm (extended version)},
+  author={Ongaro, Diego and Ousterhout, John},
+  year={2013},
+  publisher={Tech Report. May, 2014. http://ramcloud. stanford. edu/Raft. pdf}
+}
+</div></code></code></pre>
+<h2 id="requirements">Requirements</h2>
+<p>We are going to implement a distributed key-value storage system.</p>
+<p>One famous implementations is etcd</p>
+<h2 id="specifications">Specifications</h2>
+<h3 id="architecture">Architecture</h3>
+<p>Graph drawing using <code>draw.io</code>: <a href="https://app.diagrams.net/">https://app.diagrams.net/</a></p>
+<p>The app has a google drive version and a desktop version.</p>
+<p>We choose to keep <code>draw.io</code> files inside the project repository.</p>
+<p>See <code>doc/drawio-architecture.xml</code>.</p>
+<p>As you can see, there are mainly 4 modules and 2 loops running in a node.</p>
+<h2 id="implementation">Implementation</h2>
+<p>According to the Architecture.</p>
+<h2 id="individual-contribution">Individual Contribution</h2>
+<h2 id="summary">Summary</h2>
+<h2 id="how-to">How to</h2>
+<h3 id="compile">Compile</h3>
+<p>Please use at least <code>jdk 1.8</code> to compile the project, with the MAVEN (<code>mvn</code>) toolchain installed.</p>
+<p>To compile, run the compiling script <code>compile.sh</code> in the root of the project folder, a jar file <code>KVNode.jar</code> will appear at the root.</p>
+<pre><code class="language-text"><code><div>$ sh compile.sh
+</div></code></code></pre>
+<h3 id="run">Run</h3>
+<p>The builds of the code are divided into:</p>
+<ul>
+<li>client: with <code>-c</code> flag</li>
+<li>node (server): without <code>-c</code> flag and with valid configs</li>
+</ul>
+<p>Use <code>-h</code> or <code>--help</code> command to access the help.</p>
+<pre><code class="language-text"><code><div>$ java -jar KVNode.jar -h
+usage: KVNode.jar
+ -c,--client              Initiate as a client.
+ -h,--help                Help
+ -o,--host &lt;arg&gt;          The host of server
+ -p,--port &lt;arg&gt;          The port of server listening to
+ -t,--target-host &lt;arg&gt;   The host of target server to join, omit this or
+                          target-port to establish a new group (as the first and
+                          the leader)
+ -y,--target-port &lt;arg&gt;   The port of target server to join, omit this or
+                          target-host to establish a new group (as the first and
+                          the leader)
+</div></code></code></pre>
+<p>To run client, use:</p>
+<pre><code class="language-text"><code><div>$ KVNODENAME=CLIENT java -jar KVNode.jar -c
+</div></code></code></pre>
+<p>To run a server node, use: (where <code>4111</code> is the port listening, while <code>4110</code> is the target/leader port)</p>
+<pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y 4110
+</div></code></code></pre>
+<p>The host/IP <code>localhost</code> is omitted.</p>
+<p>The ENV variable <code>KVNODENAME</code> is for logs (both program log and log entries) and data persistence on the file system:</p>
+<ul>
+<li><code>KVNODENAME.log</code>: program log / output</li>
+<li><code>KVNODENAME-error.log</code>: program log on error level</li>
+<li><code>KVNODENAME_state/</code>: data storage</li>
+<li><code>KVNODENAME_log/</code>: storage for log entries</li>
+</ul>
+<h3 id="caveats">Caveats</h3>
+<p>Do notice to start nodes <strong>ONE BEFORE OTHERS</strong> with LEADER - FOLLOWER order to establish the cluster.</p>
+<p>For example:</p>
+<ol>
+<li>start a server on port <code>4111</code> first (without the flag <code>-y</code>): <code>KVNODENAME=4111 java -jar KVNode.jar -p 4111</code></li>
+<li>Until <code>4111</code> is ready as a <strong>LEADER</strong>, start another server (<code>4112</code>) using: <code>KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111</code></li>
+<li>Repeat step 2 to add more nodes</li>
+</ol>
+<h3 id="client-command">Client Command</h3>
+<p>Program in client mode will read the lines input and parse the command.</p>
+<p><code>ip:port</code> is to determine which SERVER/NODE is going to communicate:</p>
+<ul>
+<li><code>ip:port get KEY</code>
+<ul>
+<li>get a value using the <code>KEY</code></li>
+</ul>
+</li>
+<li><code>ip:port set KEY VALUE</code>
+<ul>
+<li>set <code>VALUE</code> to the <code>KEY</code></li>
+</ul>
+</li>
+<li><code>ip:port del KEY</code>
+<ul>
+<li>delete using the <code>KEY</code> (actually implemented with <code>ip:port set KEY null</code>)</li>
+</ul>
+</li>
+<li><code>ip:port setFail ip2:port2</code>
+<ul>
+<li>give no response (fail the request handling) to the server <code>ip2:port2</code></li>
+</ul>
+</li>
+</ul>
+<p>For example, getting a value of key <code>foo</code> from a node(<code>localhost:4111</code>):</p>
+<pre><code class="language-text"><code><div>localhost:4111 get foo
+</div></code></code></pre>
+<h2 id="test">Test</h2>
+<ol>
+<li>
+<p>Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.</p>
+<pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
+$ KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111
+$ KVNODENAME=4113 java -jar KVNode.jar -p 4113 -y 4111
+</div></code></code></pre>
+</li>
+<li>
+<p>Start a 3-instance cluster with leader first decided, use the client to execute the command <em>one by one</em>:</p>
+<pre><code class="language-text"><code><div>localhost:4112 get foo
+localhost:4111 set foo bar
+localhost:4113 get foo
+</div></code></code></pre>
+<p>We can see that we can get / set on different nodes.</p>
+<pre><code class="language-text"><code><div>...
+12:19:37.872 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - You just input:
+localhost:4112 get foo
+12:19:43.045 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4112, put response : ClientKVAck(result=null)
+12:19:43.046 [pool-1-thread-1] INFO  life.tannineo.cs7ns6.App - get foo=null
+localhost:4111 set foo bar
+12:19:49.792 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - You just input:
+localhost:4111 set foo bar
+12:19:49.849 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - request content : foo=bar, url : localhost:4111, put response : ClientKVAck(result=ok)
+12:19:49.849 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - set foo ok
+localhost:4113 get foo
+12:19:54.990 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - You just input:
+localhost:4113 get foo
+12:19:55.007 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4113, put response : ClientKVAck(result=Command(opt=null, key=foo, value=bar))
+12:19:55.007 [pool-1-thread-3] INFO  life.tannineo.cs7ns6.App - get foo=bar
+</div></code></code></pre>
+</li>
+<li>
+<p>Close <code>localhost:4111</code>, wait for about 10 sec (election task timeout), the rest 2 nodes will go for election. Then update data on <code>localhost:4112</code>:</p>
+<pre><code class="language-text"><code><div>localhost:4112 set foo barbar
+</div></code></code></pre>
+<p>When successed, start <code>localhost:4111</code> to join the cluster as a follower: <code>KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y ?WHOSTHELEADER?</code>, we can see the index persist and then updated by 1 when join the cluster (because we did one change). Then execute query on client:</p>
+<pre><code class="language-text"><code><div>localhost:4111 get foo
+</div></code></code></pre>
+<p>We can get <code>barbar</code>, the new data.</p>
+<pre><code class="language-text"><code><div>...
+localhost:4111 get foo
+12:07:42.285 [pool-1-thread-2] INFO life.tannineo.cs7ns6.App - You just input:
+localhost:4111 get foo
+12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - request content : foo, url : localhost:4111, put response : ClientKVAck(result=Command(opt=null, key=foo, value=barbar))
+12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - get foo=barbar
+</div></code></code></pre>
+</li>
+<li>
+<p>For partition, we test it on a 5-instance cluster. <strong>Remove all the disk files generated for clean experiment</strong>, and start 5 nodes.</p>
+<pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
+$ KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111
+$ KVNODENAME=4113 java -jar KVNode.jar -p 4113 -y 4111
+$ KVNODENAME=4114 java -jar KVNode.jar -p 4114 -y 4111
+$ KVNODENAME=4115 java -jar KVNode.jar -p 4115 -y 4111
+</div></code></code></pre>
+<p>In the client, we execute the commands in batch (the client command executor is also implemented concurrently, and can parse multiple lines).</p>
+<pre><code class="language-text"><code><div>localhost:4111 setFail localhost:4113
+localhost:4111 setFail localhost:4114
+localhost:4111 setFail localhost:4115
+localhost:4112 setFail localhost:4113
+localhost:4112 setFail localhost:4114
+localhost:4112 setFail localhost:4115
+localhost:4113 setFail localhost:4111
+localhost:4113 setFail localhost:4112
+localhost:4113 setFail localhost:4115
+localhost:4114 setFail localhost:4111
+localhost:4114 setFail localhost:4112
+localhost:4114 setFail localhost:4115
+localhost:4115 setFail localhost:4111
+localhost:4115 setFail localhost:4112
+localhost:4115 setFail localhost:4113
+localhost:4115 setFail localhost:4114
+</div></code></code></pre>
+<p>The node are divided into <code>4111 &amp; 4112 | 4113 &amp; 4114 | 4115</code>. n = 3</p>
+<pre><code class="language-text"><code><div>...
+12:45:31.059 [pool-1-thread-10] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -&gt; true
+12:45:31.059 [pool-1-thread-4] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -&gt; true
+12:45:31.059 [pool-1-thread-11] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -&gt; true
+12:45:31.059 [pool-1-thread-7] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -&gt; true
+12:45:31.059 [pool-1-thread-12] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -&gt; true
+12:45:31.060 [pool-1-thread-5] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -&gt; true
+12:45:31.060 [pool-1-thread-8] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -&gt; true
+12:45:31.060 [pool-1-thread-9] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -&gt; true
+12:45:31.060 [pool-1-thread-6] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -&gt; true
+12:45:31.074 [pool-1-thread-15] INFO  life.tannineo.cs7ns6.App - setFail localhost:4115 ok -&gt; true
+12:45:31.075 [pool-1-thread-16] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -&gt; true
+12:45:31.075 [pool-1-thread-14] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -&gt; true
+12:45:31.075 [pool-1-thread-13] INFO  life.tannineo.cs7ns6.App - setFail localhost:4111 ok -&gt; true
+12:45:31.075 [pool-1-thread-17] INFO  life.tannineo.cs7ns6.App - setFail localhost:4112 ok -&gt; true
+12:45:31.075 [pool-1-thread-18] INFO  life.tannineo.cs7ns6.App - setFail localhost:4113 ok -&gt; true
+12:45:31.319 [pool-1-thread-19] INFO  life.tannineo.cs7ns6.App - setFail localhost:4114 ok -&gt; true
+
+</div></code></code></pre>
+<p><code>true</code> means start blocking. Execute the same command again to turn it into <code>false</code> (like a switch).</p>
+<p>Wait for election happens among the nodes.</p>
+<p>Partition merging features are not implemented.</p>
+</li>
+</ol>
+
+    </body>
+    </html>

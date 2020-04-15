@@ -1,6 +1,11 @@
 # cs7ns6-groupwork
 
-This is a groupwork for CS7NS6 - Distributed Systems, 2020.
+CS7NS6 Distributed Systems 2019-20
+Exercise 2
+
+Implementing a Replicated Service Using Process Groups
+
+Final Report by Chao Chen - 19310133
 
 - [cs7ns6-groupwork](#cs7ns6-groupwork)
   - [Introduciton](#introduciton)
@@ -10,20 +15,18 @@ This is a groupwork for CS7NS6 - Distributed Systems, 2020.
   - [Implementation](#implementation)
   - [Individual Contribution](#individual-contribution)
   - [Summary](#summary)
-  - [How](#how)
-    - [Compile](#compile)
-    - [Run](#run)
-    - [Caveats](#caveats)
-    - [Client Command](#client-command)
   - [Test](#test)
-  - [Personal Contribution](#personal-contribution)
-
-<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
-
+    - [How to](#how-to)
+      - [Compile](#compile)
+      - [Run](#run)
+      - [Caveats](#caveats)
+      - [Client Command](#client-command)
+    - [Test Routine](#test-routine)
+  - [Summary](#summary-1)
 
 ## Introduciton
 
-This project aim to implement a distributed key-value store based on the RAFT algorithm.
+This project aim to implement a distributed key-value store based on the RAFT algorithm. The implementation is done with Java. The exact implementation, functionality and architecture of this algorithm will be discussed further throughout this document.
 
 A introduction about the RAFT algorithm can be found [here](https://raft.github.io/).
 
@@ -42,29 +45,39 @@ The original paper is [here](https://raft.github.io/raft.pdf) with the bibliogra
 
 ## Requirements
 
+We are going to implement a distributed key-value store. One famous implementations is 'etcd' (https://github.com/etcd-io/etcd). The service, 'etcd', is a distributed key-value store for critical data, which are often the configurations for the cloud.
+
+The read / write metrics are not the key concern in our requirements, as for configurations they are often accessed when one service in the cloud is initializing. What we do concern is the ability to provide non-stop services. It requires the system to have fault tolerance and the ability to resize dynamically
+when on line. As for storage systems, data consistency is also important.
+
 ## Specifications
 
-Graph drawing using [diagrams.net (draw.io)](https://app.diagrams.net/).
-
-The app has a google drive version and a desktop version.
-
-We choose to keep `drawio` files inside the project repository.
 
 ### Architecture
 
-[see doc/drawio-architecture.xml](doc/drawio-architecture.xml)
+Graph drawing using `draw.io`: https://app.diagrams.net/
+
+The app has a google drive version and a desktop version.
+
+We choose to keep `draw.io` files inside the project repository.
+
+See `doc/drawio-architecture.xml`.
 
 As you can see, there are mainly 4 modules and 2 loops running in a node.
 
 ## Implementation
 
+According to the Architecture.
+
 ## Individual Contribution
 
 ## Summary
 
-## How
+## Test
 
-### Compile
+### How to
+
+#### Compile
 
 Please use at least `jdk 1.8` to compile the project, with the MAVEN (`mvn`) toolchain installed.
 
@@ -74,7 +87,7 @@ To compile, run the compiling script `compile.sh` in the root of the project fol
 $ sh compile.sh
 ```
 
-### Run
+#### Run
 
 The builds of the code are divided into:
 
@@ -119,7 +132,7 @@ The ENV variable `KVNODENAME` is for logs (both program log and log entries) and
 - `KVNODENAME_state/`: data storage
 - `KVNODENAME_log/`: storage for log entries
 
-### Caveats
+#### Caveats
 
 Do notice to start nodes **ONE BEFORE OTHERS** with LEADER - FOLLOWER order to establish the cluster.
 
@@ -129,7 +142,9 @@ For example:
 2. Until `4111` is ready as a **LEADER**, start another server (`4112`) using: `KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111`
 3. Repeat step 2 to add more nodes
 
-### Client Command
+Also be care about the RocksDB files remain in the file system. Since data and logs are persisted, it might bring impact to the experiment. Clean them before experiment.
+
+#### Client Command
 
 Program in client mode will read the lines input and parse the command.
 
@@ -140,7 +155,7 @@ Program in client mode will read the lines input and parse the command.
 - `ip:port set KEY VALUE`
   - set `VALUE` to the `KEY`
 - `ip:port del KEY`
-  - delete using the `KEY`
+  - delete using the `KEY` (actually implemented with `ip:port set KEY null`)
 - `ip:port setFail ip2:port2`
   - give no response (fail the request handling) to the server `ip2:port2`
 
@@ -150,7 +165,7 @@ For example, getting a value of key `foo` from a node(`localhost:4111`):
 localhost:4111 get foo
 ```
 
-## Test
+### Test Routine
 
 1. Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.
 
@@ -271,4 +286,4 @@ localhost:4111 get foo
 
     Partition merging features are not implemented.
 
-## Personal Contribution
+## Summary

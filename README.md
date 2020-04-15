@@ -21,8 +21,7 @@ Final Report by Chao Chen - 19310133
       - [Run](#run)
       - [Caveats](#caveats)
       - [Client Command](#client-command)
-    - [Test Routine](#test-routine)
-  - [Summary](#summary-1)
+    - [Test Routine & Result](#test-routine--result)
 
 ## Introduciton
 
@@ -78,6 +77,7 @@ For partitioning:
 
 For client:
 
+- Get/Set/Delete command should be able to execute on all the available nodes.
 - Concurrent requests should be able to made via multiple clients.
 - For test convinience, the client should be able to manage the network behavior of nodes in the service group (designed to test partitions).
 
@@ -107,28 +107,40 @@ Brief information about all the modules:
 
 There are 3rd party libraries involved in our project.
 
-The communication is based on RPC calls. We use `sofa-bolt` from Alipay (https://github.com/sofastack/sofa-bolt). The connection is based on TCP with a compact data package design by the library.
+The communication is based on RPC calls. We use `sofa-bolt` from Alipay (https://github.com/sofastack/sofa-bolt). The connection is based on TCP with a compact data package defined by the library.
 
 The storage is implemented with a built-in database library called `RocksDB` (https://github.com/facebook/rocksdb) from Facebook. The database is based on file system so we can persist the data and logs on the disk when nodes fail. Another feature is that the RocksDB get operation on single key is thread safe (https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency) while for set operation we need to use external locks.
 
 ## Implementation
 
+Among the modules, the node state decides the behavior when
 
+A basic implementation of group resizing is done by adding and syncing the list of peers transmitted along with the heartbeat from leader:
+
+1. Joining the group when start a node:
+   1. Send a request to the leader and get the list of nodes in the group/
+   2. Add itself to the list and send the **old and new** lists to the leader, then wait for heartbeat.
+   3. After checking if the old list is the same as the the local one, leader will perform heartbeat as soon as it applys the new list.
+   4. End of joining.
+2. Leaving the group passively (when failure occurs):
+   1. The node is deleted from leader's list of peers when fail to respond the heartbeat.
+   2. A node will also be removed from the peers list of a follower if it fails to respond a RequestVote.
+
+The client is implemented by continuous reading the input of the console. Multiple lines can be accepted and each line is processed by a thread in the thread pool (max=20, hardcoded), so we can copy prepared scripts into the console to do requests in batch. Commands of get/set/delete can be parsed and sent by specifying the target node with host and port. For test convinience, a setFail command is added to the requirement/specification for switch the simulation of node (network) failure from one node towards one other node in the group, hense we can manually build partitions by this command.
 
 ## Individual Contribution
 
-- Involved in technique selection.
+- Being involved in technique selection.
 - Implementing the node logic and loops, with concurrency features/thread pools.
 - Implementing a rough version of dynamic group resizing.
-- Implementing the client.
-- Experiments.
+- Implementing the client and test features.
+- Tests.
 
 ## Summary
 
 We implemented a rough distributed key-value store based on RAFT protocol. The system is built with considerations about concurrency, with locks and synchronized queues as the main concurrency model. Dynamic group building and resizing is managed. Data and log entries are persisted on disk. A leader election mechanism is implemented, and the leader take in charge of the decisions like commitment. Failures are tolerated and multiple partitions are supported.
 
 There are still some future work remains. The dynamic resizing feature is rough and dangerous. In the RAFT paper (section 6), there is a solution with 2 phase commiting, in which the old and new verions of configurations are managed. Merging the partitions are still a problem. For log entries we did not do compaction. Much effort is needed for these aims.
-
 
 ## Test
 
@@ -221,7 +233,7 @@ For example, getting a value of key `foo` from a node(`localhost:4111`):
 localhost:4111 get foo
 ```
 
-### Test Routine
+### Test Routine & Result
 
 1. Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.
 
@@ -341,5 +353,3 @@ localhost:4111 get foo
     Wait for election happens among the nodes.
 
     Partition merging features are not implemented.
-
-## Summary

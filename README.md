@@ -85,7 +85,7 @@ For client:
 
 Graph drawing using `draw.io` (https://app.diagrams.net/).
 
-![Arhitecture](./doc/image/architecture.png)
+![Architecture](./doc/image/architecture.png)
 
 A big reason for using Java is that it provides a `synchronized` keyword to delare methods, preventing them to be invoked at the same time by multiple threads, or we can say the methods can be invoked when the thread get the lock.
 
@@ -113,16 +113,50 @@ The storage is implemented with a built-in database library called `RocksDB` (ht
 
 ## Implementation
 
-Among the modules, the node state decides the behavior when
+The node state decides the behavior across the modules. 3 states are divided for implementing the RAFT protocol.
+
+![State in RAFT](./doc/image/state.png)
+
+The every node starts as a Follower. And in our implementation, the first node in the group, it will go through `start -> Follower -> Timeout, Start Election -> Candidate -> Recuive Majority Votes -> Leader`. Then the rest of nodes (real Followers) can join the group with the comunication with Leader (we will explain the resizing later).
+
+Leader will handle all the Get/Set/Del(ete) operations from client, request to the Followers will be redirected to the Leader. For Set/Del operations, Leader will need to commit the changes to at least half of the nodes in the group. A log entry conatins a term number, a incremental index number and the operations performed on the database (State Machine), and client will receive the success result when harf of the nodes in the group commited the change.
+
+The node maintains the `term` number of itself and a `commitIndex`. Term number is incremental for deciding the which node is up to date to become the Leader. `commitIndex` is the commited index number of log entries for the node itself.
+
+There are two scheduled tasks running inside the node logic.
+
+The heartbeat task only start from a Leader. In normal situation, when Follower receives the heartbeat from Leader, the election timeout will be reset (no need for election when Leader is alive). Term number and commitIndex from the leader are synced to the Followers.
+
+The election task start when the Follower is not receiving the heartbeat from Leader. Followers and Candidates will vote for the requester if themselves' term number is less equal than the requester.
+
+The leader keeps track of all the commitIndex numbers from Followers.
+
+Beside timeouts for election and heartbeat, Node Logic also provide handlers from Communication module.
+
+- handlerRequestVote: handling the vote request.
+- handlerAppendEntries: handling the heartbeat and appending log entries.
+- handlerClientRequest: handling Get/Set/Del request from client.
+- handlerConfigChangeAdd: handling request to add a peer into the peer list.
+- handlerGetConfig: handling request to get config (now for peer list only) from other node.
+- handlerSetFail: For test use. Handling request to turn on/off failure simulation towards one peer.
+
+Almost all the handler implementations with writes on the properties of the node are synchronized, which mean that a type of handler can be only invoked for 1 at a time.
+
+---
+
+Other modules with brief introduciton are illustrated below.
+
+The Consensus module, in charge of two functionality:
+
+- `appendEntries`: valuate the log entriess sent from LEADER and append them to log module. To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry is me
+- `requestVote`: handling vote request from other Candidate.
 
 The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on dick, so we can lower the risk of losing data when there is a node failure.
-
-
 
 A basic implementation of group resizing is done by adding and syncing the list of peers transmitted along with the heartbeat from leader:
 
 1. Joining the group when start a node:
-   1. Send a request to the leader and get the list of nodes in the group/
+   1. Send a request to the leader and get the list of nodes in the group.
    2. Add itself to the list and send the **old and new** lists to the leader, then wait for heartbeat.
    3. After checking if the old list is the same as the the local one, leader will perform heartbeat as soon as it applys the new list.
    4. End of joining.
@@ -132,12 +166,14 @@ A basic implementation of group resizing is done by adding and syncing the list 
 
 The client is implemented by continuous reading the input of the console. Multiple lines can be accepted and each line is processed by a thread in the thread pool (max=20, hardcoded), so we can copy prepared scripts into the console to do requests in batch. Commands of get/set/delete can be parsed and sent by specifying the target node with host and port. For test convinience, a setFail command is added to the requirement/specification for switch the simulation of node (network) failure from one node towards one other node in the group, hense we can manually build partitions by this command.
 
+Also for test convinience we added a webpage GUI to perform request from client.
+
 ## Individual Contribution
 
 - Being involved in technique selection.
 - Implementing the node logic and loops, with concurrency features/thread pools.
 - Implementing a rough version of dynamic group resizing.
-- Implementing the client and test features.
+- Implementing the client and test features (Without GUI).
 - Tests.
 
 ## Summary

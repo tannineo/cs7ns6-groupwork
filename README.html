@@ -46,10 +46,9 @@ Exercise 2</p>
 <li><a href="#client-command">Client Command</a></li>
 </ul>
 </li>
-<li><a href="#test-routine">Test Routine</a></li>
+<li><a href="#test-routine--result">Test Routine &amp; Result</a></li>
 </ul>
 </li>
-<li><a href="#summary-1">Summary</a></li>
 </ul>
 </li>
 </ul>
@@ -98,12 +97,13 @@ when on line. As for storage systems, data consistency is also important.</p>
 </ul>
 <p>For client:</p>
 <ul>
+<li>Get/Set/Delete command should be able to execute on all the available nodes.</li>
 <li>Concurrent requests should be able to made via multiple clients.</li>
 <li>For test convinience, the client should be able to manage the network behavior of nodes in the service group (designed to test partitions).</li>
 </ul>
 <h2 id="architecture">Architecture</h2>
 <p>Graph drawing using <code>draw.io</code> (<a href="https://app.diagrams.net/">https://app.diagrams.net/</a>).</p>
-<p><img src="file:////Users/cary/Work/cs7ns6-groupwork/doc/image/architecture.png" alt="Arhitecture"></p>
+<p><img src="file:////Users/cary/Work/cs7ns6-groupwork/doc/image/architecture.png" alt="Architecture"></p>
 <p>A big reason for using Java is that it provides a <code>synchronized</code> keyword to delare methods, preventing them to be invoked at the same time by multiple threads, or we can say the methods can be invoked when the thread get the lock.</p>
 <p>Brief information about all the modules:</p>
 <ul>
@@ -140,16 +140,62 @@ when on line. As for storage systems, data consistency is also important.</p>
 </li>
 </ul>
 <p>There are 3rd party libraries involved in our project.</p>
-<p>The communication is based on RPC calls. We use <code>sofa-bolt</code> from Alipay (<a href="https://github.com/sofastack/sofa-bolt">https://github.com/sofastack/sofa-bolt</a>). The connection is based on TCP with a compact data package design by the library.</p>
+<p>The communication is based on RPC calls. We use <code>sofa-bolt</code> from Alipay (<a href="https://github.com/sofastack/sofa-bolt">https://github.com/sofastack/sofa-bolt</a>). The connection is based on TCP with a compact data package defined by the library.</p>
 <p>The storage is implemented with a built-in database library called <code>RocksDB</code> (<a href="https://github.com/facebook/rocksdb">https://github.com/facebook/rocksdb</a>) from Facebook. The database is based on file system so we can persist the data and logs on the disk when nodes fail. Another feature is that the RocksDB get operation on single key is thread safe (<a href="https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency">https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency</a>) while for set operation we need to use external locks.</p>
 <h2 id="implementation">Implementation</h2>
+<p>The node state decides the behavior across the modules. 3 states are divided for implementing the RAFT protocol.</p>
+<p><img src="file:////Users/cary/Work/cs7ns6-groupwork/doc/image/state.png" alt="State in RAFT"></p>
+<p>The every node starts as a Follower. And in our implementation, the first node in the group, it will go through <code>start -&gt; Follower -&gt; Timeout, Start Election -&gt; Candidate -&gt; Recuive Majority Votes -&gt; Leader</code>. Then the rest of nodes (real Followers) can join the group with the comunication with Leader (we will explain the resizing later).</p>
+<p>Leader will handle all the Get/Set/Del(ete) operations from client, request to the Followers will be redirected to the Leader. For Set/Del operations, Leader will need to commit the changes to at least half of the nodes in the group. A log entry conatins a term number, a incremental index number and the operations performed on the database (State Machine), and client will receive the success result when harf of the nodes in the group commited the change.</p>
+<p>The node maintains the <code>term</code> number of itself and a <code>commitIndex</code>. Term number is incremental for deciding the which node is up to date to become the Leader. <code>commitIndex</code> is the commited index number of log entries for the node itself.</p>
+<p>There are two scheduled tasks running inside the node logic.</p>
+<p>The heartbeat task only start from a Leader. In normal situation, when Follower receives the heartbeat from Leader, the election timeout will be reset (no need for election when Leader is alive). Term number and commitIndex from the leader are synced to the Followers.</p>
+<p>The election task start when the Follower is not receiving the heartbeat from Leader. Followers and Candidates will vote for the requester if themselves' term number is less equal than the requester.</p>
+<p>The leader keeps track of all the commitIndex numbers from Followers.</p>
+<p>Beside timeouts for election and heartbeat, Node Logic also provide handlers from Communication module.</p>
+<ul>
+<li>handlerRequestVote: handling the vote request.</li>
+<li>handlerAppendEntries: handling the heartbeat and appending log entries.</li>
+<li>handlerClientRequest: handling Get/Set/Del request from client.</li>
+<li>handlerConfigChangeAdd: handling request to add a peer into the peer list.</li>
+<li>handlerGetConfig: handling request to get config (now for peer list only) from other node.</li>
+<li>handlerSetFail: For test use. Handling request to turn on/off failure simulation towards one peer.</li>
+</ul>
+<p>Almost all the handler implementations with writes on the properties of the node are synchronized, which mean that a type of handler can be only invoked for 1 at a time.</p>
+<hr>
+<p>Other modules with brief introduciton are illustrated below.</p>
+<p>The Consensus module, in charge of two functionality:</p>
+<ul>
+<li><code>appendEntries</code>: valuate the log entriess sent from LEADER and append them to log module. To note that <code>appendEntries</code> will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry is me</li>
+<li><code>requestVote</code>: handling vote request from other Candidate.</li>
+</ul>
+<p>The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on dick, so we can lower the risk of losing data when there is a node failure.</p>
+<p>A basic implementation of group resizing is done by adding and syncing the list of peers transmitted along with the heartbeat from leader:</p>
+<ol>
+<li>Joining the group when start a node:
+<ol>
+<li>Send a request to the leader and get the list of nodes in the group.</li>
+<li>Add itself to the list and send the <strong>old and new</strong> lists to the leader, then wait for heartbeat.</li>
+<li>After checking if the old list is the same as the the local one, leader will perform heartbeat as soon as it applys the new list.</li>
+<li>End of joining.</li>
+</ol>
+</li>
+<li>Leaving the group passively (when failure occurs):
+<ol>
+<li>The node is deleted from leader's list of peers when fail to respond the heartbeat.</li>
+<li>A node will also be removed from the peers list of a follower if it fails to respond a RequestVote.</li>
+</ol>
+</li>
+</ol>
+<p>The client is implemented by continuous reading the input of the console. Multiple lines can be accepted and each line is processed by a thread in the thread pool (max=20, hardcoded), so we can copy prepared scripts into the console to do requests in batch. Commands of get/set/delete can be parsed and sent by specifying the target node with host and port. For test convinience, a setFail command is added to the requirement/specification for switch the simulation of node (network) failure from one node towards one other node in the group, hense we can manually build partitions by this command.</p>
+<p>Also for test convinience we added a webpage GUI to perform request from client.</p>
 <h2 id="individual-contribution">Individual Contribution</h2>
 <ul>
-<li>Involved in technique selection.</li>
+<li>Being involved in technique selection.</li>
 <li>Implementing the node logic and loops, with concurrency features/thread pools.</li>
 <li>Implementing a rough version of dynamic group resizing.</li>
-<li>Implementing the client.</li>
-<li>Experiments.</li>
+<li>Implementing the client and test features (Without GUI).</li>
+<li>Tests.</li>
 </ul>
 <h2 id="summary">Summary</h2>
 <p>We implemented a rough distributed key-value store based on RAFT protocol. The system is built with considerations about concurrency, with locks and synchronized queues as the main concurrency model. Dynamic group building and resizing is managed. Data and log entries are persisted on disk. A leader election mechanism is implemented, and the leader take in charge of the decisions like commitment. Failures are tolerated and multiple partitions are supported.</p>
@@ -231,7 +277,7 @@ usage: KVNode.jar
 <p>For example, getting a value of key <code>foo</code> from a node(<code>localhost:4111</code>):</p>
 <pre><code class="language-text"><code><div>localhost:4111 get foo
 </div></code></code></pre>
-<h3 id="test-routine">Test Routine</h3>
+<h3 id="test-routine--result">Test Routine &amp; Result</h3>
 <ol>
 <li>
 <p>Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.</p>
@@ -331,7 +377,6 @@ localhost:4115 setFail localhost:4114
 <p>Partition merging features are not implemented.</p>
 </li>
 </ol>
-<h2 id="summary-1">Summary</h2>
 
     </body>
     </html>

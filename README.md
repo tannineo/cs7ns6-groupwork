@@ -115,6 +115,10 @@ The storage is implemented with a built-in database library called `RocksDB` (ht
 
 Among the modules, the node state decides the behavior when
 
+The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on dick, so we can lower the risk of losing data when there is a node failure.
+
+
+
 A basic implementation of group resizing is done by adding and syncing the list of peers transmitted along with the heartbeat from leader:
 
 1. Joining the group when start a node:

@@ -31,14 +31,13 @@ Exercise 2</p>
 <ul>
 <li><a href="#introduciton">Introduciton</a></li>
 <li><a href="#requirements">Requirements</a></li>
-<li><a href="#specifications">Specifications</a>
-<ul>
+<li><a href="#specifications">Specifications</a></li>
 <li><a href="#architecture">Architecture</a></li>
-</ul>
-</li>
 <li><a href="#implementation">Implementation</a></li>
 <li><a href="#individual-contribution">Individual Contribution</a></li>
 <li><a href="#summary">Summary</a></li>
+<li><a href="#test">Test</a>
+<ul>
 <li><a href="#how-to">How to</a>
 <ul>
 <li><a href="#compile">Compile</a></li>
@@ -47,13 +46,16 @@ Exercise 2</p>
 <li><a href="#client-command">Client Command</a></li>
 </ul>
 </li>
-<li><a href="#test">Test</a></li>
+<li><a href="#test-routine">Test Routine</a></li>
+</ul>
+</li>
+<li><a href="#summary-1">Summary</a></li>
 </ul>
 </li>
 </ul>
 <h2 id="introduciton">Introduciton</h2>
-<p>This project aim to implement a distributed key-value store based on the RAFT algorithm.</p>
-<p>A introduction about the RAFT algorithm can be found <a href="https://raft.github.io/">here</a>.</p>
+<p>This project aim to implement a distributed key-value store based on the RAFT algorithm. The implementation is done with Java. The exact implementation, functionalities and architecture of this service will be discussed further throughout this document.</p>
+<p>The work is based on RAFT protocol. A introduction about the RAFT algorithm can be found <a href="https://raft.github.io/">here</a>.</p>
 <p>The original paper is <a href="https://raft.github.io/raft.pdf">here</a> with the bibliography.</p>
 <blockquote>
 <p>Ongaro, Diego, and John Ousterhout. &quot;In search of an understandable consensus algorithm.&quot; 2014 {USENIX} Annual Technical Conference ({USENIX}{ATC} 14). 2014.</p>
@@ -66,26 +68,29 @@ Exercise 2</p>
 }
 </div></code></code></pre>
 <h2 id="requirements">Requirements</h2>
-<p>We are going to implement a distributed key-value storage system.</p>
-<p>One famous implementations is etcd</p>
+<p>We are going to implement a distributed key-value store. One famous implementations is 'etcd' (<a href="https://github.com/etcd-io/etcd">https://github.com/etcd-io/etcd</a>). The service, 'etcd', is a distributed key-value store for critical data, which are often the configurations for the cloud.</p>
+<p>The read / write metrics are not the key concern in our requirements, as for configurations they are often accessed when one service in the cloud is initializing. What we do concern is the ability to provide non-stop services. It requires the system to have fault tolerance and the ability to resize dynamically
+when on line. As for storage systems, data consistency is also important.</p>
 <h2 id="specifications">Specifications</h2>
-<h3 id="architecture">Architecture</h3>
-<p>Graph drawing using <code>draw.io</code>: <a href="https://app.diagrams.net/">https://app.diagrams.net/</a></p>
-<p>The app has a google drive version and a desktop version.</p>
-<p>We choose to keep <code>draw.io</code> files inside the project repository.</p>
-<p>See <code>doc/drawio-architecture.xml</code>.</p>
-<p>As you can see, there are mainly 4 modules and 2 loops running in a node.</p>
+<h2 id="architecture">Architecture</h2>
+<p>Graph drawing using <code>draw.io</code> (<a href="https://app.diagrams.net/">https://app.diagrams.net/</a>).</p>
+<p>As we can see, there are mainly 4 modules and 2 loops running in a node.</p>
+<p><img src="file:////Users/cary/Work/cs7ns6-groupwork/doc/image/architecture.png" alt="Arhitecture"></p>
+<p>The communication is based on RPC calls. We use <code>sofa-bolt</code> from Alipay (<a href="https://github.com/sofastack/sofa-bolt">https://github.com/sofastack/sofa-bolt</a>). The connection is based on TCP with a compact data package design by the library.</p>
+<p>The storage is implemented with a built-in database library called <code>RocksDB</code> (<a href="https://github.com/facebook/rocksdb">https://github.com/facebook/rocksdb</a>) from Facebook. The database is based on file system so we can persist the data and logs on the disk when nodes fail. Another feature is that the RocksDB get operation on single key is thread safe (<a href="https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency">https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency</a>) while for set operation we need to use external locks.</p>
+<p>A big reason for using Java is that it provides a <code>synchronized</code> keyword to delare methods, preventing them to be invoked at the same time by multiple threads, or we can say the methods can be invoked when the thread get the lock.</p>
 <h2 id="implementation">Implementation</h2>
 <p>According to the Architecture.</p>
 <h2 id="individual-contribution">Individual Contribution</h2>
 <h2 id="summary">Summary</h2>
-<h2 id="how-to">How to</h2>
-<h3 id="compile">Compile</h3>
+<h2 id="test">Test</h2>
+<h3 id="how-to">How to</h3>
+<h4 id="compile">Compile</h4>
 <p>Please use at least <code>jdk 1.8</code> to compile the project, with the MAVEN (<code>mvn</code>) toolchain installed.</p>
 <p>To compile, run the compiling script <code>compile.sh</code> in the root of the project folder, a jar file <code>KVNode.jar</code> will appear at the root.</p>
 <pre><code class="language-text"><code><div>$ sh compile.sh
 </div></code></code></pre>
-<h3 id="run">Run</h3>
+<h4 id="run">Run</h4>
 <p>The builds of the code are divided into:</p>
 <ul>
 <li>client: with <code>-c</code> flag</li>
@@ -115,11 +120,10 @@ usage: KVNode.jar
 <p>The ENV variable <code>KVNODENAME</code> is for logs (both program log and log entries) and data persistence on the file system:</p>
 <ul>
 <li><code>KVNODENAME.log</code>: program log / output</li>
-<li><code>KVNODENAME-error.log</code>: program log on error level</li>
 <li><code>KVNODENAME_state/</code>: data storage</li>
 <li><code>KVNODENAME_log/</code>: storage for log entries</li>
 </ul>
-<h3 id="caveats">Caveats</h3>
+<h4 id="caveats">Caveats</h4>
 <p>Do notice to start nodes <strong>ONE BEFORE OTHERS</strong> with LEADER - FOLLOWER order to establish the cluster.</p>
 <p>For example:</p>
 <ol>
@@ -127,7 +131,8 @@ usage: KVNode.jar
 <li>Until <code>4111</code> is ready as a <strong>LEADER</strong>, start another server (<code>4112</code>) using: <code>KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111</code></li>
 <li>Repeat step 2 to add more nodes</li>
 </ol>
-<h3 id="client-command">Client Command</h3>
+<p>Also be care about the RocksDB files remain in the file system. Since data and logs are persisted, it might bring impact to the experiment. Clean them before experiment.</p>
+<h4 id="client-command">Client Command</h4>
 <p>Program in client mode will read the lines input and parse the command.</p>
 <p><code>ip:port</code> is to determine which SERVER/NODE is going to communicate:</p>
 <ul>
@@ -155,7 +160,7 @@ usage: KVNode.jar
 <p>For example, getting a value of key <code>foo</code> from a node(<code>localhost:4111</code>):</p>
 <pre><code class="language-text"><code><div>localhost:4111 get foo
 </div></code></code></pre>
-<h2 id="test">Test</h2>
+<h3 id="test-routine">Test Routine</h3>
 <ol>
 <li>
 <p>Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.</p>
@@ -255,6 +260,7 @@ localhost:4115 setFail localhost:4114
 <p>Partition merging features are not implemented.</p>
 </li>
 </ol>
+<h2 id="summary-1">Summary</h2>
 
     </body>
     </html>

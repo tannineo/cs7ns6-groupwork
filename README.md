@@ -11,7 +11,7 @@ Final Report by Chao Chen - 19310133
   - [Introduciton](#introduciton)
   - [Requirements](#requirements)
   - [Specifications](#specifications)
-    - [Architecture](#architecture)
+  - [Architecture](#architecture)
   - [Implementation](#implementation)
   - [Individual Contribution](#individual-contribution)
   - [Summary](#summary)
@@ -26,9 +26,9 @@ Final Report by Chao Chen - 19310133
 
 ## Introduciton
 
-This project aim to implement a distributed key-value store based on the RAFT algorithm. The implementation is done with Java. The exact implementation, functionality and architecture of this algorithm will be discussed further throughout this document.
+This project aim to implement a distributed key-value store based on the RAFT algorithm. The implementation is done with Java. The exact implementation, functionalities and architecture of this service will be discussed further throughout this document.
 
-A introduction about the RAFT algorithm can be found [here](https://raft.github.io/).
+The work is based on RAFT protocol. A introduction about the RAFT algorithm can be found here: https://raft.github.io/
 
 The original paper is [here](https://raft.github.io/raft.pdf) with the bibliography.
 
@@ -52,22 +52,58 @@ when on line. As for storage systems, data consistency is also important.
 
 ## Specifications
 
+For service management:
 
-### Architecture
+- The group should be able to resize dynamically without stopping the service.
+- The list of members of one group should be configurable, or be updated as the members joining or leaving.
 
-Graph drawing using `draw.io`: https://app.diagrams.net/
+For service operation:
 
-The app has a google drive version and a desktop version.
+- The service should accept concurrent requests from mulitple clients.
+- Data should be persisted on disk instead of memory in case of node failures.
 
-We choose to keep `draw.io` files inside the project repository.
+For replica failures:
 
-See `doc/drawio-architecture.xml`.
+- One node should be able to recognize failures from other nodes in the group.
+- Failures from other nodes should be tolerated, while the function of the group remains normal.
+- As mentioned in service operation section, Data should be persisted on disk, and should be able to recover when the node is back alive.
 
-As you can see, there are mainly 4 modules and 2 loops running in a node.
+For partitioning:
+
+- The nodes should still be able to provide services when there is a network partition.
+- N partitions (N >= 2) can be present, and they themselves should be organized.
+
+For client:
+
+- Concurrent requests should be able to made via multiple clients.
+- For test convinience, the client should be able to manage the network behavior of nodes in the service group (designed to test partitions).
+
+## Architecture
+
+Graph drawing using `draw.io` (https://app.diagrams.net/).
+
+As we can see, there are mainly 4 modules and 2 loops running in a node.
+
+![Arhitecture](./doc/image/architecture.png)
+
+A big reason for using Java is that it provides a `synchronized` keyword to delare methods, preventing them to be invoked at the same time by multiple threads, or we can say the methods can be invoked when the thread get the lock.
+
+Brief information about all the modules:
+
+- Consensus
+- LogModule
+- Node Logic with Loops
+- Communication
+- Client
+
+There are 3rd party libraries involved in our project.
+
+The communication is based on RPC calls. We use `sofa-bolt` from Alipay (https://github.com/sofastack/sofa-bolt). The connection is based on TCP with a compact data package design by the library.
+
+The storage is implemented with a built-in database library called `RocksDB` (https://github.com/facebook/rocksdb) from Facebook. The database is based on file system so we can persist the data and logs on the disk when nodes fail. Another feature is that the RocksDB get operation on single key is thread safe (https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency) while for set operation we need to use external locks.
 
 ## Implementation
 
-According to the Architecture.
 
 ## Individual Contribution
 
@@ -128,7 +164,6 @@ The host/IP `localhost` is omitted.
 The ENV variable `KVNODENAME` is for logs (both program log and log entries) and data persistence on the file system:
 
 - `KVNODENAME.log`: program log / output
-- `KVNODENAME-error.log`: program log on error level
 - `KVNODENAME_state/`: data storage
 - `KVNODENAME_log/`: storage for log entries
 

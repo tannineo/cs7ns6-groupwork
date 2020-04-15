@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 /**
@@ -12,7 +13,7 @@ import java.util.Objects;
 @Getter
 @Setter
 @ToString
-public class Peer {
+public class Peer implements Serializable {
 
     /**
      * ip:port

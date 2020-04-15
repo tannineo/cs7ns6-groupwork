@@ -1,8 +1,6 @@
 package life.tannineo.cs7ns6;
 
 import com.alibaba.fastjson.JSON;
-import life.tannineo.cs7ns6.consts.ReservedKeys;
-import life.tannineo.cs7ns6.consts.ResultString;
 import life.tannineo.cs7ns6.network.RClient;
 import life.tannineo.cs7ns6.node.Node;
 import life.tannineo.cs7ns6.node.NodeConfig;
@@ -11,7 +9,6 @@ import life.tannineo.cs7ns6.node.entity.network.ClientKVAck;
 import life.tannineo.cs7ns6.node.entity.network.ClientKVReq;
 import life.tannineo.cs7ns6.node.entity.network.Request;
 import life.tannineo.cs7ns6.node.entity.network.Response;
-import life.tannineo.cs7ns6.node.entity.reserved.PeerSet;
 import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,7 +101,7 @@ public class App {
             if (commandLine.hasOption(TARGET_PORT_OPTION) || commandLine.hasOption(TARGET_PORT_OPTION_LONG)) {
                 targetPort = commandLine.getOptionValue(TARGET_PORT_OPTION, targetPort);
             }
-            if (targetHost.equals("") && targetPort.equals("")) {
+            if (!targetHost.equals("") && !targetPort.equals("")) {
                 newGroup = false;
             }
         } catch (Exception e) {
@@ -124,6 +121,8 @@ public class App {
 
                 try {
                     switch (inputArr[1]) {
+                        case "to": // TODO
+                            break;
                         case "get":
                             logger.info("get " + inputArr[2] + "=" + operationGet(inputArr[0], inputArr[2]));
                             break;
@@ -133,10 +132,10 @@ public class App {
                         case "del":
                             logger.info("del " + inputArr[2] + " " + operationDel(inputArr[0], inputArr[2]));
                             break;
-                        case "nra":
+                        case "nra": // TODO
                             logger.info("nra " + operationNoResponseToAll(inputArr[0]));
                             break;
-                        case "nr":
+                        case "nr": // TODO
                             logger.info("nr " + inputArr[2] + " " + operationNoResponseTo(inputArr[0], inputArr[2]));
                             break;
                         default:
@@ -163,17 +162,12 @@ public class App {
 
             logger.debug("Server start with config: {}", JSON.toJSON(nodeConfig));
 
+            Node node = new Node(nodeConfig);
             if (!newGroup) {
-
-                // 1. get peerSet from LEADER
-
-
-                // 2. set peerSet from LEADER
-
-
+                // start with connecting to the LEADER
+                node.startWithLeader();
             } else {
-                // start the LEADER server
-                Node node = new Node(nodeConfig);
+                // start the LEADER
                 node.start();
             }
         }
@@ -220,28 +214,6 @@ public class App {
 
         if (cmd == null) return "null";
         return cmd.getValue();
-    }
-
-    public static PeerSet getPeerSet(String addr) throws RuntimeException {
-        String peerSetStr = operationGet(addr, ReservedKeys.PEERSET);
-        PeerSet peerSet = null;
-        try {
-            peerSet = JSON.parseObject(peerSetStr, PeerSet.class);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Error getting peerSet from LEADER " + addr);
-        }
-
-        if (peerSet == null) throw new RuntimeException("Error getting peerSet from LEADER " + addr);
-        return peerSet;
-    }
-
-    public static String setPeerSet(String addr, PeerSet peerSet) throws RuntimeException {
-        String result = operationSet(addr, ReservedKeys.PEERSET, JSON.toJSONString(peerSet));
-
-        if (!result.equals(ResultString.OK)) throw new RuntimeException("Error setting peerSet to LEADER " + addr);
-
-        return result;
     }
 
     // operation: ip:port set KEY VALUE

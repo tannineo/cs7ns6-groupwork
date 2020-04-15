@@ -33,13 +33,19 @@ public class Request<T> implements Serializable {
     public static final int CLIENT_REQ = 2;
 
     /**
-     * add
+     * add peer
      */
     public static final int CHANGE_CONFIG_ADD = 3;
+
     /**
-     * remove
+     * remove peer
      */
     public static final int CHANGE_CONFIG_REMOVE = 4;
+
+    /**
+     * get config (peers)
+     */
+    public static final int GET_CONFIG = 5;
 
     /**
      * the command type from above

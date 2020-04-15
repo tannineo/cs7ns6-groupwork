@@ -1,6 +1,7 @@
 package life.tannineo.cs7ns6.node.entity.param;
 
 import life.tannineo.cs7ns6.node.entity.LogEntry;
+import life.tannineo.cs7ns6.node.entity.reserved.PeerSet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -20,7 +21,8 @@ public class EntryParam extends BaseParam {
     long prevLogIndex;
     long preLogTerm;
 
-    LogEntry[] entries;
+    LogEntry[] entries; // null for heartbeat
+    PeerSet peerSet; // valid for hearbeat
 
     long leaderCommit;
 
@@ -35,6 +37,7 @@ public class EntryParam extends BaseParam {
         setPreLogTerm(builder.preLogTerm);
         setEntries(builder.entries);
         setLeaderCommit(builder.leaderCommit);
+        setPeerSet(builder.pearSet);
     }
 
     public static Builder builder() {
@@ -51,6 +54,7 @@ public class EntryParam extends BaseParam {
         private long preLogTerm;
         private LogEntry[] entries;
         private long leaderCommit;
+        private PeerSet pearSet;
 
         private Builder() {
         }
@@ -87,6 +91,11 @@ public class EntryParam extends BaseParam {
 
         public Builder leaderCommit(long val) {
             leaderCommit = val;
+            return this;
+        }
+
+        public Builder peerSet(PeerSet val) {
+            pearSet = val;
             return this;
         }
 

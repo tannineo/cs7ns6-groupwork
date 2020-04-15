@@ -1,6 +1,8 @@
 package life.tannineo.cs7ns6.node;
 
+import com.alibaba.fastjson.JSON;
 import life.tannineo.cs7ns6.consts.NodeState;
+import life.tannineo.cs7ns6.consts.ResultString;
 import life.tannineo.cs7ns6.network.RClient;
 import life.tannineo.cs7ns6.network.RServer;
 import life.tannineo.cs7ns6.node.concurrent.RaftThreadPool;
@@ -12,10 +14,12 @@ import life.tannineo.cs7ns6.node.entity.network.ClientKVReq;
 import life.tannineo.cs7ns6.node.entity.network.Request;
 import life.tannineo.cs7ns6.node.entity.network.Response;
 import life.tannineo.cs7ns6.node.entity.param.EntryParam;
+import life.tannineo.cs7ns6.node.entity.param.PeerChange;
 import life.tannineo.cs7ns6.node.entity.param.RevoteParam;
 import life.tannineo.cs7ns6.node.entity.reserved.Peer;
 import life.tannineo.cs7ns6.node.entity.reserved.PeerSet;
 import life.tannineo.cs7ns6.node.entity.result.EntryResult;
+import life.tannineo.cs7ns6.node.entity.result.PeerSetResult;
 import life.tannineo.cs7ns6.node.entity.result.RevoteResult;
 import life.tannineo.cs7ns6.util.Converter;
 import lombok.Getter;
@@ -109,7 +113,7 @@ public class Node {
     /**
      * the peers
      */
-    PeerSet peerSet;
+    public volatile PeerSet peerSet;
 
     /**
      * manage the heartbeat
@@ -131,6 +135,8 @@ public class Node {
      */
     Consensus consensus;
 
+    ConcurrentHashMap<String, Integer> retryCounter = new ConcurrentHashMap<>();
+
     private ReplicationFailQueueConsumer replicationFailQueueConsumer = new ReplicationFailQueueConsumer();
 
     private LinkedBlockingQueue<ReplicationFail> replicationFailQueue = new LinkedBlockingQueue<>(2048);
@@ -147,7 +153,7 @@ public class Node {
         this.logger = LoggerFactory.getLogger(Node.class);
 
         this.config = nodeConfig;
-        this.selfAddr = nodeConfig.getName();
+        this.selfAddr = nodeConfig.getHost() + ":" + nodeConfig.getPort();
         this.stateMachine = new StateMachine("./" + this.selfAddr + "_state/");
         this.logModule = new LogModule("./" + this.selfAddr + "_log/");
 
@@ -155,19 +161,95 @@ public class Node {
         this.peerSet = new PeerSet();
         this.peerSet.getList().add(new Peer(this.selfAddr));
 
-
         this.rServer = new RServer(this.config.port, this);
     }
 
-    public void startWithLeader(String leaderAddr) throws Exception {
+    public void startWithLeader() throws RuntimeException {
         // TODO: send request to update peerSet of the whole group via LEADER
 
-        // once successed, start server
-        this.start();
+        synchronized (this) {
+
+            String leaderAddr = config.targetHost + ":" + config.targetPort;
+
+            // get peerSet from LEADER
+            this.peerSet = getPeerSetFromLeader(leaderAddr);
+
+            Peer peerSelf = new Peer(this.selfAddr);
+
+            // send add peer request
+            // set selfPeer to LEADER
+            if (!addSelfToLeaderPeerSet(leaderAddr, peerSelf)) {
+                throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
+            }
+
+            // success save self
+            this.peerSet.getList().add(peerSelf);
+
+            logger.info("node start with peerSets : {}", JSON.toJSONString(this.peerSet));
+
+            // once successed, start server
+            this.start();
+        }
+    }
+
+    /**
+     * node request to get config (peers) from leader
+     *
+     * @param leaderAddr
+     * @return
+     */
+    public PeerSet getPeerSetFromLeader(String leaderAddr) {
+        Request req = Request.newBuilder()
+            .cmd(Request.GET_CONFIG)
+            .obj("getPeerSetPlease")
+            .url(leaderAddr)
+            .build();
+
+        try {
+            Response<PeerSetResult> res = rClient.send(req);
+            if (res == null) {
+                throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
+            }
+            PeerSetResult peerSetResult = res.getResult();
+            return peerSetResult.getPeerSet();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
+        }
+    }
+
+    /**
+     * node request to add config (selfPeer) to leader
+     *
+     * @param leaderAddr
+     * @return
+     */
+    public boolean addSelfToLeaderPeerSet(String leaderAddr, Peer selfPeer) {
+        PeerChange peerChange = new PeerChange();
+
+        peerChange.modifiedPeer = selfPeer;
+        peerChange.oldPeerSet = peerSet;
+
+        Request<PeerChange> req = new Request<>();
+        req.setObj(peerChange);
+        req.setCmd(Request.CHANGE_CONFIG_ADD);
+        req.setUrl(leaderAddr);
+
+        try {
+            Response<PeerSetResult> res = rClient.send(req);
+            if (res == null) {
+                throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
+            }
+            PeerSetResult peerSetResult = res.getResult();
+            return peerSetResult.getResult().equals(ResultString.OK);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
+        }
     }
 
 
-    public void start() throws Exception {
+    public void start() {
         synchronized (this) {
             if (started) {
                 return;
@@ -262,10 +344,21 @@ public class Node {
         return consensus.requestVote(param);
     }
 
+    /**
+     * handling logEntry appending
+     * <p>
+     * heartbeat updating peerSet (when no logEntries)
+     */
     public EntryResult handlerAppendEntries(EntryParam param) {
         if (param.getEntries() != null) {
-            logger.warn("node receive node {} append entry, entry content = {}", param.getLeaderId(), param.getEntries());
+            logger.info("node receive node {} append entry, entry content = {}", param.getLeaderId(), param.getEntries());
         }
+
+        if (param.getPeerSet() != null && !peerSet.toString().equals(param.getPeerSet().toString())) {
+            peerSet = param.getPeerSet();
+            logger.info("HEARTBEAT updating pearSet to: {}", peerSet);
+        }
+
         return consensus.appendEntries(param);
     }
 
@@ -288,85 +381,83 @@ public class Node {
 
     public Future<Boolean> replication(Peer peer, LogEntry entry) {
 
-        return RaftThreadPool.submit(new Callable() {
-            @Override
-            public Boolean call() throws Exception {
+        return RaftThreadPool.submit(() -> {
 
-                long start = System.currentTimeMillis(), end = start;
+            long start = System.currentTimeMillis(), end = start;
 
-                // 20s retry timeout
-                while (end - start < 20 * 1000L) {
+            // 20s retry timeout
+            while (end - start < 20 * 1000L) {
 
-                    EntryParam entryParam = new EntryParam();
-                    entryParam.setTerm(currentTerm);
-                    entryParam.setServerId(peer.getAddr());
-                    entryParam.setLeaderId(selfAddr);
+                EntryParam entryParam = new EntryParam();
+                entryParam.setTerm(currentTerm);
+                entryParam.setServerId(peer.getAddr());
+                entryParam.setLeaderId(selfAddr);
 
-                    entryParam.setLeaderCommit(commitIndex);
+                entryParam.setLeaderCommit(commitIndex);
 
-                    // First RPC after becoming the LEADER
-                    Long nextIndex = nextIndexs.get(peer);
-                    LinkedList<LogEntry> logEntries = new LinkedList<>();
-                    if (entry.getIndex() >= nextIndex) {
-                        for (long i = nextIndex; i <= entry.getIndex(); i++) {
-                            LogEntry l = logModule.read(i);
-                            if (l != null) {
-                                logEntries.add(l);
-                            }
+                // First RPC after becoming the LEADER
+                Long nextIndex = nextIndexs.get(peer);
+                LinkedList<LogEntry> logEntries = new LinkedList<>();
+                if (entry.getIndex() >= nextIndex) {
+                    for (long i = nextIndex; i <= entry.getIndex(); i++) {
+                        LogEntry l = logModule.read(i);
+                        if (l != null) {
+                            logEntries.add(l);
                         }
-                    } else {
-                        logEntries.add(entry);
                     }
-                    // the mininum index
-                    LogEntry preLog = getPreLog(logEntries.getFirst());
-                    entryParam.setPreLogTerm(preLog.getTerm());
-                    entryParam.setPrevLogIndex(preLog.getIndex());
+                } else {
+                    logEntries.add(entry);
+                }
+                // the mininum index
+                LogEntry preLog = getPreLog(logEntries.getFirst());
+                entryParam.setPreLogTerm(preLog.getTerm());
+                entryParam.setPrevLogIndex(preLog.getIndex());
 
-                    entryParam.setEntries(logEntries.toArray(new LogEntry[0]));
+                entryParam.setEntries(logEntries.toArray(new LogEntry[0]));
 
-                    Request request = Request.newBuilder()
-                        .cmd(Request.A_ENTRIES)
-                        .obj(entryParam)
-                        .url(peer.getAddr())
-                        .build();
+                Request request = Request.newBuilder()
+                    .cmd(Request.A_ENTRIES)
+                    .obj(entryParam)
+                    .url(peer.getAddr())
+                    .build();
 
-                    try {
-                        Response response = getRClient().send(request);
-                        if (response == null) {
+                try {
+                    Response response = rClient.send(request);
+                    if (response == null) {
+                        return false;
+                    }
+                    EntryResult result = (EntryResult) response.getResult();
+                    if (result != null && result.isSuccess()) {
+                        logger.info("append follower entry success , follower=[{}], entry=[{}]", peer, entryParam.getEntries());
+                        // update index
+                        nextIndexs.put(peer, entry.getIndex() + 1);
+                        matchIndexs.put(peer, entry.getIndex());
+                        return true;
+                    } else if (result != null) {
+                        // larger than me
+                        if (result.getTerm() > currentTerm) {
+                            logger.warn("follower [{}] term [{}] than more self, and my term = [{}], so, I will become follower",
+                                peer, result.getTerm(), currentTerm);
+                            currentTerm = result.getTerm();
+                            // to be follower
+                            state = NodeState.FOLLOWER;
                             return false;
-                        }
-                        EntryResult result = (EntryResult) response.getResult();
-                        if (result != null && result.isSuccess()) {
-                            logger.info("append follower entry success , follower=[{}], entry=[{}]", peer, entryParam.getEntries());
-                            // update index
-                            nextIndexs.put(peer, entry.getIndex() + 1);
-                            matchIndexs.put(peer, entry.getIndex());
-                            return true;
-                        } else if (result != null) {
-                            // larger than me
-                            if (result.getTerm() > currentTerm) {
-                                logger.warn("follower [{}] term [{}] than more self, and my term = [{}], so, I will become follower",
-                                    peer, result.getTerm(), currentTerm);
-                                currentTerm = result.getTerm();
-                                // to be follower
-                                state = NodeState.FOLLOWER;
-                                return false;
-                            } else {
-                                if (nextIndex == 0) {
-                                    nextIndex = 1L;
-                                }
-                                nextIndexs.put(peer, nextIndex - 1);
-                                logger.warn("follower {} nextIndex not match, will reduce nextIndex and retry RPC append, nextIndex : [{}]", peer.getAddr(),
-                                    nextIndex);
-                                // retry until success
+                        } else {
+                            if (nextIndex == 0) {
+                                nextIndex = 1L;
                             }
+                            nextIndexs.put(peer, nextIndex - 1);
+                            logger.warn("follower {} nextIndex not match, will reduce nextIndex and retry RPC append, nextIndex : [{}]", peer.getAddr(),
+                                nextIndex);
+                            // retry until success
                         }
+                    }
 
-                        end = System.currentTimeMillis();
+                    end = System.currentTimeMillis();
 
-                    } catch (Exception e) {
-                        logger.warn(e.getMessage(), e);
-                        // TODO retry it in the queue
+                } catch (Exception e) {
+                    logger.warn(e.getMessage(), e);
+                    // TODO retry it in the queue
 //                        ReplicationFailModel model =  ReplicationFailModel.newBuilder()
 //                            .callable(this)
 //                            .logEntry(entry)
@@ -374,29 +465,25 @@ public class Node {
 //                            .offerTime(System.currentTimeMillis())
 //                            .build();
 //                        replicationFailQueue.offer(model);
-                        return false;
-                    }
+                    return false;
                 }
-                // timeout
-                return false;
             }
+            // timeout
+            return false;
         });
 
     }
 
     private void getRPCAppendResult(List<Future<Boolean>> futureList, CountDownLatch latch, List<Boolean> resultList) {
         for (Future<Boolean> future : futureList) {
-            RaftThreadPool.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        resultList.add(future.get(3000, MILLISECONDS));
-                    } catch (CancellationException | TimeoutException | ExecutionException | InterruptedException e) {
-                        e.printStackTrace();
-                        resultList.add(false);
-                    } finally {
-                        latch.countDown();
-                    }
+            RaftThreadPool.execute(() -> {
+                try {
+                    resultList.add(future.get(3000, MILLISECONDS));
+                } catch (CancellationException | TimeoutException | ExecutionException | InterruptedException e) {
+                    e.printStackTrace();
+                    resultList.add(false);
+                } finally {
+                    latch.countDown();
                 }
             });
         }
@@ -530,6 +617,71 @@ public class Node {
         }
     }
 
+
+    public synchronized PeerSetResult handlerConfigChangeAdd(PeerChange change) {
+        return handlerConfigChange(change, true);
+    }
+
+    public synchronized PeerSetResult handlerConfigChangeRemove(PeerChange change) {
+        return handlerConfigChange(change, false);
+    }
+
+
+    /**
+     * change config handler
+     * <p>
+     * TODO: did not implement the 2 phase commit as paper mentioned
+     *
+     * @param change
+     * @param add    adding or removing the node
+     * @return
+     */
+    public synchronized PeerSetResult handlerConfigChange(PeerChange change, Boolean add) {
+
+        logger.warn("handlerConfigChange handle peerSet change");
+
+        PeerSetResult result = new PeerSetResult();
+
+        if (!state.equals(NodeState.LEADER)) {
+            logger.warn("I not am leader, return fail");
+            result.setResult(ResultString.FAIL);
+            return result;
+        }
+
+        // check if oldPeers are the same
+        if (!peerSet.toString().equals(change.oldPeerSet.toString())) {
+            logger.warn("The change.oldPeerSet: {} is not the same as {}", change.oldPeerSet, this.peerSet);
+            result.setResult(ResultString.FAIL);
+            return result;
+        }
+
+        // need to commit changes with other nodes
+        // TODO: special LogEntry appending for config change
+
+        // TODO: update peerSet directly, can be dangerous
+        if (add) peerSet.getList().add(change.modifiedPeer);
+        else peerSet.getList().remove(change.modifiedPeer);
+
+        // adjust the heartbeat time to invoke a heartbeat as soon as possible
+        preHeartBeatTime = 0;
+
+        logger.info("LEADER now is with pearSet: {}", JSON.toJSONString(peerSet));
+
+        result.setPeerSet(peerSet);
+        return result;
+    }
+
+    /**
+     * handling the get config request (peers)
+     *
+     * @return
+     */
+    public synchronized PeerSetResult handlerGetConfig() {
+        PeerSetResult peerSetResult = new PeerSetResult();
+        peerSetResult.setPeerSet(peerSet);
+        return peerSetResult;
+    }
+
     // region heartbreak
     class HeartBeatTask implements Runnable {
 
@@ -562,6 +714,7 @@ public class Node {
                     .leaderId(selfAddr)
                     .serverId(peer.getAddr())
                     .term(currentTerm)
+                    .peerSet(peerSet)
                     .build();
 
                 Request<EntryParam> request = new Request<>(
@@ -569,23 +722,23 @@ public class Node {
                     param,
                     peer.getAddr());
 
-                RaftThreadPool.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Response response = getRClient().send(request);
-                            EntryResult entryResult = (EntryResult) response.getResult();
-                            long term = entryResult.getTerm();
+                RaftThreadPool.execute(() -> {
+                    try {
+                        Response response = getRClient().send(request);
+                        EntryResult entryResult = (EntryResult) response.getResult();
+                        long term = entryResult.getTerm();
 
-                            if (term > currentTerm) {
-                                logger.error("self will become follower, he's term : {}, my term : {}", term, currentTerm);
-                                currentTerm = term;
-                                votedFor = "";
-                                state = NodeState.FOLLOWER;
-                            }
-                        } catch (Exception e) {
-                            logger.error("HeartBeatTask RPC Fail, request URL : {} ", request.getUrl());
+                        if (term > currentTerm) {
+                            logger.error("self will become follower, he's term : {}, my term : {}", term, currentTerm);
+                            currentTerm = term;
+                            votedFor = "";
+                            state = NodeState.FOLLOWER;
                         }
+                    } catch (Exception e) {
+                        // TODO: directly remove peer by LEADER, dangerous
+                        peerSet.getList().remove(new Peer(peer.getAddr()));
+                        logger.error("HeartBeatTask RPC Fail, request URL : {} update peerSet: {}", request.getUrl(), peerSet);
+
                     }
                 }, false);
             }
@@ -595,17 +748,6 @@ public class Node {
 
 
     // region election
-
-    /**
-     * 1. 在转变成候选人后就立即开始选举过程
-     * 自增当前的任期号（currentTerm）
-     * 给自己投票
-     * 重置选举超时计时器
-     * 发送请求投票的 RPC 给其他所有服务器
-     * 2. 如果接收到大多数服务器的选票，那么就变成领导人
-     * 3. 如果接收到来自新的领导人的附加日志 RPC，转变成跟随者
-     * 4. 如果选举过程超时，再次发起一轮选举
-     */
 
     /**
      * the election logic
@@ -659,38 +801,35 @@ public class Node {
             // send request
             for (Peer peer : peers) {
 
-                futureArrayList.add(RaftThreadPool.submit(new Callable() {
-                    @Override
-                    public Object call() throws Exception {
-                        long lastTerm = 0L;
-                        LogEntry last = logModule.getLast();
-                        if (last != null) {
-                            lastTerm = last.getTerm();
-                        }
+                futureArrayList.add(RaftThreadPool.submit(() -> {
+                    long lastTerm = 0L;
+                    LogEntry last = logModule.getLast();
+                    if (last != null) {
+                        lastTerm = last.getTerm();
+                    }
 
-                        RevoteParam param = RevoteParam.newBuilder().
-                            term(currentTerm).
-                            candidateId(selfAddr).
-                            lastLogIndex(Converter.convert(logModule.getLastIndex())).
-                            lastLogTerm(lastTerm).
-                            build();
+                    RevoteParam param = RevoteParam.newBuilder().
+                        term(currentTerm).
+                        candidateId(selfAddr).
+                        lastLogIndex(Converter.convert(logModule.getLastIndex())).
+                        lastLogTerm(lastTerm).
+                        build();
 
-                        Request request = Request.newBuilder()
-                            .cmd(Request.R_VOTE)
-                            .obj(param)
-                            .url(peer.getAddr())
-                            .build();
+                    Request request = Request.newBuilder()
+                        .cmd(Request.R_VOTE)
+                        .obj(param)
+                        .url(peer.getAddr())
+                        .build();
 
-                        try {
-                            @SuppressWarnings("unchecked")
-                            Response<RevoteResult> response = getRClient().send(request);
-                            return response;
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Response<RevoteResult> response = getRClient().send(request);
+                        return response;
 
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            logger.error("ElectionTask RPC Fail , URL : " + request.getUrl());
-                            return null;
-                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        logger.error("ElectionTask RPC Fail , URL : " + request.getUrl());
+                        return null;
                     }
                 }));
             }
@@ -701,34 +840,31 @@ public class Node {
             logger.info("futureArrayList.size() : {}", futureArrayList.size());
             // wait for result
             for (Future future : futureArrayList) {
-                RaftThreadPool.submit(new Callable() {
-                    @Override
-                    public Object call() throws Exception {
-                        try {
+                RaftThreadPool.submit(() -> {
+                    try {
 
-                            @SuppressWarnings("unchecked")
-                            Response<RevoteResult> response = (Response<RevoteResult>) future.get(3000, MILLISECONDS);
-                            if (response == null) {
-                                return -1;
-                            }
-                            boolean isVoteGranted = response.getResult().isVoteGranted();
-
-                            if (isVoteGranted) {
-                                success2.incrementAndGet();
-                            } else {
-                                // update term
-                                long resTerm = response.getResult().getTerm();
-                                if (resTerm >= currentTerm) {
-                                    currentTerm = resTerm;
-                                }
-                            }
-                            return 0;
-                        } catch (Exception e) {
-                            logger.error("future.get exception , e : ", e);
+                        @SuppressWarnings("unchecked")
+                        Response<RevoteResult> response = (Response<RevoteResult>) future.get(3000, MILLISECONDS);
+                        if (response == null) {
                             return -1;
-                        } finally {
-                            latch.countDown();
                         }
+                        boolean isVoteGranted = response.getResult().isVoteGranted();
+
+                        if (isVoteGranted) {
+                            success2.incrementAndGet();
+                        } else {
+                            // update term
+                            long resTerm = response.getResult().getTerm();
+                            if (resTerm >= currentTerm) {
+                                currentTerm = resTerm;
+                            }
+                        }
+                        return 0;
+                    } catch (Exception e) {
+                        logger.error("future.get exception , e : ", e);
+                        return -1;
+                    } finally {
+                        latch.countDown();
                     }
                 });
             }

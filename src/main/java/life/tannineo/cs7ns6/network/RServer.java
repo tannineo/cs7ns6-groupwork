@@ -6,6 +6,7 @@ import life.tannineo.cs7ns6.node.entity.network.ClientKVReq;
 import life.tannineo.cs7ns6.node.entity.network.Request;
 import life.tannineo.cs7ns6.node.entity.network.Response;
 import life.tannineo.cs7ns6.node.entity.param.EntryParam;
+import life.tannineo.cs7ns6.node.entity.param.PeerChange;
 import life.tannineo.cs7ns6.node.entity.param.RevoteParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,12 @@ public class RServer {
             return new Response(node.handlerAppendEntries((EntryParam) request.getObj()));
         } else if (request.getCmd() == Request.CLIENT_REQ) {
             return new Response(node.handlerClientRequest((ClientKVReq) request.getObj()));
+        } else if (request.getCmd() == Request.CHANGE_CONFIG_ADD) {
+            return new Response(node.handlerConfigChangeAdd((PeerChange) request.getObj()));
+        } else if (request.getCmd() == Request.CHANGE_CONFIG_REMOVE) {
+            return new Response(node.handlerConfigChangeRemove((PeerChange) request.getObj()));
+        } else if (request.getCmd() == Request.GET_CONFIG) {
+            return new Response(node.handlerGetConfig());
         }
         return null;
     }

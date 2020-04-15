@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,7 +16,7 @@ import java.util.stream.Collectors;
 @Getter
 @Setter
 @ToString
-public class PeerSet {
+public class PeerSet implements Serializable {
 
     /**
      * the list includes the leader

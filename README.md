@@ -73,6 +73,16 @@ The host `localhost` is omitted.
 
 The env variable `KVNODENAME` is for logs and data persistence on the file system.
 
+### Caveats
+
+Do notice to start nodes **ONE BY ONE** with LEADER - FOLLOWER order to establish the cluster.
+
+For example:
+
+1. start a server on port `4111` first (without the flag `-y`): `KVNODENAME=4111 java -jar KVNode.jar -p 4111`
+2. Until `4111` is ready as a **LEADER**, start another server (`4112`) using: `KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111`
+3. Repeat step 2 to add more nodes
+
 ### Client Command
 
 `ip:port` is to determine which SERVER/NODE is going to communicate:

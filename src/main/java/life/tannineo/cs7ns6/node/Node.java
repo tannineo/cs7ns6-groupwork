@@ -135,7 +135,7 @@ public class Node {
      */
     Consensus consensus;
 
-    ConcurrentHashMap<String, Integer> retryCounter = new ConcurrentHashMap<>();
+    volatile ConcurrentHashMap<String, Boolean> failReq;
 
     private ReplicationFailQueueConsumer replicationFailQueueConsumer = new ReplicationFailQueueConsumer();
 
@@ -154,12 +154,14 @@ public class Node {
 
         this.config = nodeConfig;
         this.selfAddr = nodeConfig.getHost() + ":" + nodeConfig.getPort();
-        this.stateMachine = new StateMachine("./" + this.selfAddr + "_state/");
-        this.logModule = new LogModule("./" + this.selfAddr + "_log/");
+        this.stateMachine = new StateMachine("./" + System.getenv("KVNODENAME") + "_state/");
+        this.logModule = new LogModule("./" + System.getenv("KVNODENAME") + "_log/");
 
         // TODO: might change
         this.peerSet = new PeerSet();
         this.peerSet.getList().add(new Peer(this.selfAddr));
+
+        this.failReq = new ConcurrentHashMap<>();
 
         this.rServer = new RServer(this.config.port, this);
     }
@@ -198,11 +200,39 @@ public class Node {
      * @param leaderAddr
      * @return
      */
+    public PeerSet a(String leaderAddr) {
+        Request req = Request.newBuilder()
+            .cmd(Request.GET_CONFIG)
+            .obj("getPeerSetPlease")
+            .url(leaderAddr)
+            .fromServer(this.selfAddr)
+            .build();
+
+        try {
+            Response<PeerSetResult> res = rClient.send(req);
+            if (res == null) {
+                throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
+            }
+            PeerSetResult peerSetResult = res.getResult();
+            return peerSetResult.getPeerSet();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
+        }
+    }
+
+    /**
+     * node request to get config (peers) from leader
+     *
+     * @param leaderAddr
+     * @return
+     */
     public PeerSet getPeerSetFromLeader(String leaderAddr) {
         Request req = Request.newBuilder()
             .cmd(Request.GET_CONFIG)
             .obj("getPeerSetPlease")
             .url(leaderAddr)
+            .fromServer(this.selfAddr)
             .build();
 
         try {
@@ -234,6 +264,7 @@ public class Node {
         req.setObj(peerChange);
         req.setCmd(Request.CHANGE_CONFIG_ADD);
         req.setUrl(leaderAddr);
+        req.setFromServer(selfAddr);
 
         try {
             Response<PeerSetResult> res = rClient.send(req);
@@ -350,6 +381,7 @@ public class Node {
      * heartbeat updating peerSet (when no logEntries)
      */
     public EntryResult handlerAppendEntries(EntryParam param) {
+
         if (param.getEntries() != null) {
             logger.info("node receive node {} append entry, entry content = {}", param.getLeaderId(), param.getEntries());
         }
@@ -364,7 +396,7 @@ public class Node {
 
     public ClientKVAck redirect(ClientKVReq request) {
         Request<ClientKVReq> r = Request.newBuilder().
-            obj(request).url(peerSet.getLeader().getAddr()).cmd(Request.CLIENT_REQ).build();
+            obj(request).url(peerSet.getLeader().getAddr()).cmd(Request.CLIENT_REQ).fromServer(selfAddr).build();
         Response response = rClient.send(r);
         return (ClientKVAck) response.getResult();
     }
@@ -419,6 +451,7 @@ public class Node {
                     .cmd(Request.A_ENTRIES)
                     .obj(entryParam)
                     .url(peer.getAddr())
+                    .fromServer(selfAddr)
                     .build();
 
                 try {
@@ -682,6 +715,21 @@ public class Node {
         return peerSetResult;
     }
 
+    /**
+     * handling the set fail request (peers)
+     *
+     * @return
+     */
+    public synchronized PeerSetResult handlerSetFail(PeerChange peerChange) {
+        String toSetFail = peerChange.getModifiedPeer().getAddr();
+        boolean f = !Boolean.TRUE.equals(failReq.get(toSetFail));
+        failReq.put(toSetFail, f);
+
+        PeerSetResult peerSetResult = new PeerSetResult();
+        peerSetResult.setSetFailResult(f);
+        return peerSetResult;
+    }
+
     // region heartbreak
     class HeartBeatTask implements Runnable {
 
@@ -720,7 +768,7 @@ public class Node {
                 Request<EntryParam> request = new Request<>(
                     Request.A_ENTRIES,
                     param,
-                    peer.getAddr());
+                    peer.getAddr(), selfAddr);
 
                 RaftThreadPool.execute(() -> {
                     try {
@@ -819,6 +867,7 @@ public class Node {
                         .cmd(Request.R_VOTE)
                         .obj(param)
                         .url(peer.getAddr())
+                        .fromServer(selfAddr)
                         .build();
 
                     try {

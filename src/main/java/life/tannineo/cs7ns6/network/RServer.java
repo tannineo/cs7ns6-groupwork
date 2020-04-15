@@ -1,5 +1,6 @@
 package life.tannineo.cs7ns6.network;
 
+import com.alibaba.fastjson.JSON;
 import com.alipay.remoting.BizContext;
 import life.tannineo.cs7ns6.node.Node;
 import life.tannineo.cs7ns6.node.entity.network.ClientKVReq;
@@ -38,6 +39,9 @@ public class RServer {
 
             rpcServer = new com.alipay.remoting.rpc.RpcServer(this.port, false, false);
 
+            this.node = node;
+            flag = true;
+
             rpcServer.registerUserProcessor(new RProcessor<Request>() {
 
                 @Override
@@ -45,9 +49,6 @@ public class RServer {
                     return handlerRequest(request);
                 }
             });
-
-            this.node = node;
-            flag = true;
         }
 
     }
@@ -62,6 +63,13 @@ public class RServer {
     }
 
     public Response handlerRequest(Request request) {
+
+        if (Boolean.TRUE.equals(node.getFailReq().get(request.getFromServer()))) {
+            String str = "rejected by reject list: " + JSON.toJSONString(node.getFailReq());
+            logger.info(str);
+            throw new RuntimeException(str);
+        }
+
         if (request.getCmd() == Request.R_VOTE) {
             return new Response(node.handlerRequestVote((RevoteParam) request.getObj()));
         } else if (request.getCmd() == Request.A_ENTRIES) {
@@ -74,6 +82,8 @@ public class RServer {
             return new Response(node.handlerConfigChangeRemove((PeerChange) request.getObj()));
         } else if (request.getCmd() == Request.GET_CONFIG) {
             return new Response(node.handlerGetConfig());
+        } else if (request.getCmd() == Request.SET_FAIL) {
+            return new Response(node.handlerSetFail((PeerChange) request.getObj()));
         }
         return null;
     }

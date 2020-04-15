@@ -47,6 +47,12 @@ public class Request<T> implements Serializable {
      */
     public static final int GET_CONFIG = 5;
 
+
+    /**
+     * set fail to true false
+     */
+    public static final int SET_FAIL = 6;
+
     /**
      * the command type from above
      */
@@ -63,6 +69,8 @@ public class Request<T> implements Serializable {
 
     String url;
 
+    String fromServer;
+
     public Request() {
     }
 
@@ -70,16 +78,18 @@ public class Request<T> implements Serializable {
         this.obj = obj;
     }
 
-    public Request(int cmd, T obj, String url) {
+    public Request(int cmd, T obj, String url, String fromServer) {
         this.cmd = cmd;
         this.obj = obj;
         this.url = url;
+        this.fromServer = fromServer;
     }
 
     private Request(Builder builder) {
         setCmd(builder.cmd);
         setObj((T) builder.obj);
         setUrl(builder.url);
+        setFromServer(builder.fromServer);
     }
 
     public static Builder newBuilder() {
@@ -92,6 +102,7 @@ public class Request<T> implements Serializable {
         private int cmd;
         private Object obj;
         private String url;
+        private String fromServer;
 
         private Builder() {
         }
@@ -108,6 +119,11 @@ public class Request<T> implements Serializable {
 
         public Builder url(String val) {
             url = val;
+            return this;
+        }
+
+        public Builder fromServer(String val) {
+            fromServer = val;
             return this;
         }
 

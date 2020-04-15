@@ -23,7 +23,7 @@ public class RClient {
     }
 
     public Response send(Request request, int timeout) {
-        Response result = null;
+        Response result;
         try {
             result = (Response) CLIENT.invokeSync(request.getUrl(), request, timeout);
         } catch (Exception e) {
@@ -31,6 +31,6 @@ public class RClient {
             logger.info("rpc RaftRemotingException ");
             throw new RuntimeException(e);
         }
-        return (result);
+        return result;
     }
 }

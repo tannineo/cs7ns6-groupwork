@@ -22,4 +22,6 @@ public class PeerSetResult implements Serializable {
     String result = ResultString.OK;
 
     PeerSet peerSet;
+
+    Boolean setFailResult;
 }

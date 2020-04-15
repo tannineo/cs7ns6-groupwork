@@ -9,6 +9,9 @@ import life.tannineo.cs7ns6.node.entity.network.ClientKVAck;
 import life.tannineo.cs7ns6.node.entity.network.ClientKVReq;
 import life.tannineo.cs7ns6.node.entity.network.Request;
 import life.tannineo.cs7ns6.node.entity.network.Response;
+import life.tannineo.cs7ns6.node.entity.param.PeerChange;
+import life.tannineo.cs7ns6.node.entity.reserved.Peer;
+import life.tannineo.cs7ns6.node.entity.result.PeerSetResult;
 import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +25,6 @@ public class App {
 
     private static String HELP_OPTION = "h";
     private static String HELP_OPTION_LONG = "help";
-
-    private static String NODE_NAME_OPTION = "n";
-    private static String NODE_NAME_OPTION_LONG = "name";
 
     private static String HOST_OPTION = "o";
     private static String HOST_OPTION_LONG = "host";
@@ -55,7 +55,7 @@ public class App {
         String port = "4111";
 
         boolean newGroup = true;
-        String targetHost = "";
+        String targetHost = "localhost";
         String targetPort = "0";
 
         /**
@@ -79,11 +79,6 @@ public class App {
                 clientMode = true;
             }
 
-            // have a name
-            if (commandLine.hasOption(NODE_NAME_OPTION) || commandLine.hasOption(NODE_NAME_OPTION_LONG)) {
-                nodeName = commandLine.getOptionValue(NODE_NAME_OPTION, nodeName);
-            }
-
             // have a host
             if (commandLine.hasOption(HOST_OPTION) || commandLine.hasOption(HOST_OPTION_LONG)) {
                 host = commandLine.getOptionValue(HOST_OPTION, host);
@@ -101,7 +96,7 @@ public class App {
             if (commandLine.hasOption(TARGET_PORT_OPTION) || commandLine.hasOption(TARGET_PORT_OPTION_LONG)) {
                 targetPort = commandLine.getOptionValue(TARGET_PORT_OPTION, targetPort);
             }
-            if (!targetHost.equals("") && !targetPort.equals("")) {
+            if (!targetHost.equals("") && !targetPort.equals("0")) {
                 newGroup = false;
             }
         } catch (Exception e) {
@@ -132,11 +127,8 @@ public class App {
                         case "del":
                             logger.info("del " + inputArr[2] + " " + operationDel(inputArr[0], inputArr[2]));
                             break;
-                        case "nra": // TODO
-                            logger.info("nra " + operationNoResponseToAll(inputArr[0]));
-                            break;
-                        case "nr": // TODO
-                            logger.info("nr " + inputArr[2] + " " + operationNoResponseTo(inputArr[0], inputArr[2]));
+                        case "setFail":
+                            logger.info("setFail " + inputArr[2] + " " + operationNoResponseTo(inputArr[0], inputArr[2]));
                             break;
                         default:
                             logger.warn("Command parsing error...");
@@ -153,7 +145,7 @@ public class App {
              */
             // set configs
             NodeConfig nodeConfig = new NodeConfig();
-            nodeConfig.setName(nodeName);
+            nodeConfig.setName(System.getenv("KVNODENAME"));
             nodeConfig.setHost(host);
             nodeConfig.setPort(Integer.parseInt(port));
             nodeConfig.setNewGroup(newGroup);
@@ -183,7 +175,6 @@ public class App {
     private static Options getOption() {
         final Options options = new Options();
         options.addOption(HELP_OPTION, HELP_OPTION_LONG, false, "Help");
-        options.addOption(NODE_NAME_OPTION, NODE_NAME_OPTION_LONG, true, "The name of the server, omit to use a timestamped name. The server will read the persistent files (data, logs) due to the name.");
         options.addOption(HOST_OPTION, HOST_OPTION_LONG, true, "The host of server");
         options.addOption(PORT_OPTION, PORT_OPTION_LONG, true, "The port of server listening to");
         options.addOption(TARGET_HOST_OPTION, TARGET_HOST_OPTION_LONG, true, "The host of target server to join, omit this or target-port to establish a new group (as the first and the leader)");
@@ -202,6 +193,7 @@ public class App {
         r.setObj(obj);
         r.setUrl(addr);
         r.setCmd(Request.CLIENT_REQ);
+        r.setFromServer("client");
         Response<ClientKVAck> response = null;
         try {
             response = CLIENT.send(r);
@@ -224,6 +216,7 @@ public class App {
         r.setObj(obj);
         r.setUrl(addr);
         r.setCmd(Request.CLIENT_REQ);
+        r.setFromServer("client");
         Response<ClientKVAck> response = null;
         try {
             response = CLIENT.send(r);
@@ -240,16 +233,29 @@ public class App {
         return operationSet(addr, key, null);
     }
 
-    // operation: ip:port nra
-    public static String operationNoResponseToAll(String addr) {
-        String value = "";
-        return value;
-    }
-
-    // operation: ip:port nr ip:port
+    // operation: ip:port setFail ip:port
     public static String operationNoResponseTo(String addr, String serverName) {
-        String value = "";
-        return value;
+        PeerChange peerChange = new PeerChange();
+
+        peerChange.modifiedPeer = new Peer(serverName);
+
+        Request<PeerChange> req = new Request<>();
+        req.setObj(peerChange);
+        req.setCmd(Request.SET_FAIL);
+        req.setUrl(addr);
+        req.setFromServer("CLIENT");
+
+        try {
+            Response<PeerSetResult> res = CLIENT.send(req);
+            if (res == null) {
+                throw new RuntimeException("setFail failed!!!!!!!!!!!!!!!");
+            }
+            PeerSetResult peerSetResult = res.getResult();
+            return peerSetResult.getResult() + " -> " + peerSetResult.getSetFailResult();
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("setFail failed!!!!!!!!!!!!!!!");
+        }
     }
 
     // endregion

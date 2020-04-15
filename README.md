@@ -4,13 +4,17 @@ This is a groupwork for CS7NS6 - Distributed Systems, 2020.
 
 - [cs7ns6-groupwork](#cs7ns6-groupwork)
   - [Introduciton](#introduciton)
+  - [Requirements](#requirements)
+  - [Specifications](#specifications)
+    - [Architecture](#architecture)
+  - [Implementation](#implementation)
+  - [Individual Contribution](#individual-contribution)
+  - [Summary](#summary)
   - [How](#how)
     - [Compile](#compile)
     - [Run](#run)
     - [Caveats](#caveats)
     - [Client Command](#client-command)
-  - [Design & Specification](#design--specification)
-    - [Architecture](#architecture)
   - [Test](#test)
   - [Personal Contribution](#personal-contribution)
 
@@ -35,6 +39,28 @@ The original paper is [here](https://raft.github.io/raft.pdf) with the bibliogra
   publisher={Tech Report. May, 2014. http://ramcloud. stanford. edu/Raft. pdf}
 }
 ```
+
+## Requirements
+
+## Specifications
+
+Graph drawing using [diagrams.net (draw.io)](https://app.diagrams.net/).
+
+The app has a google drive version and a desktop version.
+
+We choose to keep `drawio` files inside the project repository.
+
+### Architecture
+
+[see doc/drawio-architecture.xml](doc/drawio-architecture.xml)
+
+As you can see, there are mainly 4 modules and 2 loops running in a node.
+
+## Implementation
+
+## Individual Contribution
+
+## Summary
 
 ## How
 
@@ -124,20 +150,6 @@ For example, getting a value of key `foo` from a node(`localhost:4111`):
 localhost:4111 get foo
 ```
 
-## Design & Specification
-
-Graph drawing using [diagrams.net (draw.io)](https://app.diagrams.net/).
-
-The app has a google drive version and a desktop version.
-
-We choose to keep `drawio` files inside the project repository.
-
-### Architecture
-
-[see doc/drawio-architecture.xml](doc/drawio-architecture.xml)
-
-As you can see, there are mainly 4 modules and 2 loops running in a node.
-
 ## Test
 
 1. Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.
@@ -199,7 +211,7 @@ As you can see, there are mainly 4 modules and 2 loops running in a node.
     12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App - get foo=barbar
     ```
 
-4. For partition, we test it on a 5-instance cluster. **Remove all the disk files generated**, and start 5 nodes.
+4. For partition, we test it on a 5-instance cluster. **Remove all the disk files generated for clean experiment**, and start 5 nodes.
 
     ```text
     $ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
@@ -230,7 +242,7 @@ As you can see, there are mainly 4 modules and 2 loops running in a node.
     localhost:4115 setFail localhost:4114
     ```
 
-    The node are divided into `4111 & 4112`, `4113 & 4114`, `4115`. n = 3
+    The node are divided into `4111 & 4112 | 4113 & 4114 | 4115`. n = 3
 
     ```text
     ...
@@ -255,6 +267,8 @@ As you can see, there are mainly 4 modules and 2 loops running in a node.
 
     `true` means start blocking. Execute the same command again to turn it into `false` (like a switch).
 
-    Wait fot election happens among the nodes.
+    Wait for election happens among the nodes.
+
+    Partition merging features are not implemented.
 
 ## Personal Contribution

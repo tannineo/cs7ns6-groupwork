@@ -202,33 +202,6 @@ public class Node {
      * @param leaderAddr
      * @return
      */
-    public PeerSet a(String leaderAddr) {
-        Request req = Request.newBuilder()
-            .cmd(Request.GET_CONFIG)
-            .obj("getPeerSetPlease")
-            .url(leaderAddr)
-            .fromServer(this.selfAddr)
-            .build();
-
-        try {
-            Response<PeerSetResult> res = rClient.send(req);
-            if (res == null) {
-                throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
-            }
-            PeerSetResult peerSetResult = res.getResult();
-            return peerSetResult.getPeerSet();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Adding self to LEADER peerSet failed!!!!!!!!!!!!!!!");
-        }
-    }
-
-    /**
-     * node request to get config (peers) from leader
-     *
-     * @param leaderAddr
-     * @return
-     */
     public PeerSet getPeerSetFromLeader(String leaderAddr) {
         Request req = Request.newBuilder()
             .cmd(Request.GET_CONFIG)

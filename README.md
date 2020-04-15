@@ -2,7 +2,20 @@
 
 This is a groupwork for CS7NS6 - Distributed Systems, 2020.
 
-[TOC]
+- [cs7ns6-groupwork](#cs7ns6-groupwork)
+  - [Introduciton](#introduciton)
+  - [How](#how)
+    - [Compile](#compile)
+    - [Run](#run)
+    - [Caveats](#caveats)
+    - [Client Command](#client-command)
+  - [Design](#design)
+    - [Architecture](#architecture)
+  - [Test](#test)
+  - [About](#about)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
 
 ## Introduciton
 
@@ -82,7 +95,7 @@ The ENV variable `KVNODENAME` is for logs (both program log and log entries) and
 
 ### Caveats
 
-Do notice to start nodes **ONE BY ONE** with LEADER - FOLLOWER order to establish the cluster.
+Do notice to start nodes **ONE BEFORE OTHERS** with LEADER - FOLLOWER order to establish the cluster.
 
 For example:
 
@@ -123,21 +136,23 @@ We choose to keep `drawio` files inside the project repository.
 
 [see doc/drawio-architecture.xml](doc/drawio-architecture.xml)
 
-As you can see from the , there are mainly 4 modules and 2 loops running in a node.
+As you can see, there are mainly 4 modules and 2 loops running in a node.
 
 ## Test
 
-1. start a 3-instance cluster
+1. Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.
 
-```
-localhost:4111 setFail localhost:4114
-localhost:4112 setFail localhost:4114
-localhost:4113 setFail localhost:4114
-localhost:4114 setFail localhost:4111
-localhost:4114 setFail localhost:4112
-localhost:4114 setFail localhost:4113
+    ```text
+    $ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
+    $ KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111
+    $ KVNODENAME=4113 java -jar KVNode.jar -p 4113 -y 4111
+    ```
 
-```
+   - Service management 4/4
+2. Start a 3-instance cluster with leader first decided, use the client to execute the command:
+3.
+
+
 
 ## About
 

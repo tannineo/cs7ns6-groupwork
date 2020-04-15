@@ -21,6 +21,7 @@ import life.tannineo.cs7ns6.node.entity.reserved.PeerSet;
 import life.tannineo.cs7ns6.node.entity.result.EntryResult;
 import life.tannineo.cs7ns6.node.entity.result.PeerSetResult;
 import life.tannineo.cs7ns6.node.entity.result.RevoteResult;
+import life.tannineo.cs7ns6.util.CloneUtil;
 import life.tannineo.cs7ns6.util.Converter;
 import lombok.Getter;
 import lombok.Setter;
@@ -88,6 +89,7 @@ public class Node {
      * for every follower, the index to send
      */
     ConcurrentHashMap<Peer, Long> nextIndexs;
+
     /**
      * for every follower, the index they copied
      */
@@ -352,6 +354,7 @@ public class Node {
         nextIndexs = new ConcurrentHashMap<>();
         matchIndexs = new ConcurrentHashMap<>();
         for (Peer peer : peerSet.getPeersWithOutSelf(selfAddr)) {
+            // TODO: important indexes
             nextIndexs.put(peer, logModule.getLastIndex() + 1);
             matchIndexs.put(peer, 0L);
         }
@@ -415,6 +418,11 @@ public class Node {
 
         return RaftThreadPool.submit(() -> {
 
+            Peer pPeer = CloneUtil.clone(peer);
+            LogEntry logEntry = CloneUtil.clone(entry);
+
+            logger.warn("replication logEntry : {}", logEntry);
+
             long start = System.currentTimeMillis(), end = start;
 
             // 20s retry timeout
@@ -422,23 +430,25 @@ public class Node {
 
                 EntryParam entryParam = new EntryParam();
                 entryParam.setTerm(currentTerm);
-                entryParam.setServerId(peer.getAddr());
+                entryParam.setServerId(pPeer.getAddr());
                 entryParam.setLeaderId(selfAddr);
 
                 entryParam.setLeaderCommit(commitIndex);
 
+
                 // First RPC after becoming the LEADER
-                Long nextIndex = nextIndexs.get(peer);
+                Long nextIndex = nextIndexs.get(pPeer);
+                if (nextIndex == null) nextIndex = 0L;
                 LinkedList<LogEntry> logEntries = new LinkedList<>();
-                if (entry.getIndex() >= nextIndex) {
-                    for (long i = nextIndex; i <= entry.getIndex(); i++) {
+                if (logEntry.getIndex() >= nextIndex) {
+                    for (long i = nextIndex; i <= logEntry.getIndex(); i++) {
                         LogEntry l = logModule.read(i);
                         if (l != null) {
                             logEntries.add(l);
                         }
                     }
                 } else {
-                    logEntries.add(entry);
+                    logEntries.add(logEntry);
                 }
                 // the mininum index
                 LogEntry preLog = getPreLog(logEntries.getFirst());
@@ -450,7 +460,7 @@ public class Node {
                 Request request = Request.newBuilder()
                     .cmd(Request.A_ENTRIES)
                     .obj(entryParam)
-                    .url(peer.getAddr())
+                    .url(pPeer.getAddr())
                     .fromServer(selfAddr)
                     .build();
 
@@ -461,16 +471,16 @@ public class Node {
                     }
                     EntryResult result = (EntryResult) response.getResult();
                     if (result != null && result.isSuccess()) {
-                        logger.info("append follower entry success , follower=[{}], entry=[{}]", peer, entryParam.getEntries());
+                        logger.info("append follower entry success , follower=[{}], entry=[{}]", pPeer, entryParam.getEntries());
                         // update index
-                        nextIndexs.put(peer, entry.getIndex() + 1);
-                        matchIndexs.put(peer, entry.getIndex());
+                        nextIndexs.put(pPeer, logEntry.getIndex() + 1);
+                        matchIndexs.put(pPeer, logEntry.getIndex());
                         return true;
                     } else if (result != null) {
                         // larger than me
                         if (result.getTerm() > currentTerm) {
                             logger.warn("follower [{}] term [{}] than more self, and my term = [{}], so, I will become follower",
-                                peer, result.getTerm(), currentTerm);
+                                pPeer, result.getTerm(), currentTerm);
                             currentTerm = result.getTerm();
                             // to be follower
                             state = NodeState.FOLLOWER;
@@ -479,8 +489,8 @@ public class Node {
                             if (nextIndex == 0) {
                                 nextIndex = 1L;
                             }
-                            nextIndexs.put(peer, nextIndex - 1);
-                            logger.warn("follower {} nextIndex not match, will reduce nextIndex and retry RPC append, nextIndex : [{}]", peer.getAddr(),
+                            nextIndexs.put(pPeer, nextIndex - 1);
+                            logger.warn("follower {} nextIndex not match, will reduce nextIndex and retry RPC append, nextIndex : [{}]", pPeer.getAddr(),
                                 nextIndex);
                             // retry until success
                         }
@@ -692,8 +702,14 @@ public class Node {
         // TODO: special LogEntry appending for config change
 
         // TODO: update peerSet directly, can be dangerous
-        if (add) peerSet.getList().add(change.modifiedPeer);
-        else peerSet.getList().remove(change.modifiedPeer);
+        if (add) {
+            peerSet.getList().add(change.modifiedPeer);
+            nextIndexs.putIfAbsent(change.modifiedPeer, logModule.getLastIndex() + 1);
+            matchIndexs.putIfAbsent(change.modifiedPeer, 0L);
+        } else {
+            peerSet.getList().remove(change.modifiedPeer);
+            // indexes remains
+        }
 
         // adjust the heartbeat time to invoke a heartbeat as soon as possible
         preHeartBeatTime = 0;

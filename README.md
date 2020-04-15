@@ -39,7 +39,8 @@ The original paper is [here](https://raft.github.io/raft.pdf) with the bibliogra
   title={In search of an understandable consensus algorithm (extended version)},
   author={Ongaro, Diego and Ousterhout, John},
   year={2013},
-  publisher={Tech Report. May, 2014. http://ramcloud. stanford. edu/Raft. pdf}
+  publisher={Tech Report. May, 2014. http://ramcloud.stanford.edu/Raft.pdf},
+  url={http://ramcloud.stanford.edu/Raft.pdf}
 }
 ```
 
@@ -67,11 +68,13 @@ For replica failures:
 - One node should be able to recognize failures from other nodes in the group.
 - Failures from other nodes should be tolerated, while the function of the group remains normal.
 - As mentioned in service operation section, Data should be persisted on disk, and should be able to recover when the node is back alive.
+- Eventual consistency should be ensured.
 
 For partitioning:
 
 - The nodes should still be able to provide services when there is a network partition.
 - N partitions (N >= 2) can be present, and they themselves should be organized.
+- Eventual consistency should be ensured inside each partitions.
 
 For client:
 
@@ -82,8 +85,6 @@ For client:
 
 Graph drawing using `draw.io` (https://app.diagrams.net/).
 
-As we can see, there are mainly 4 modules and 2 loops running in a node.
-
 ![Arhitecture](./doc/image/architecture.png)
 
 A big reason for using Java is that it provides a `synchronized` keyword to delare methods, preventing them to be invoked at the same time by multiple threads, or we can say the methods can be invoked when the thread get the lock.
@@ -91,10 +92,18 @@ A big reason for using Java is that it provides a `synchronized` keyword to dela
 Brief information about all the modules:
 
 - Consensus
-- LogModule
+  - Contains logic for consensus feafure.
+- Log Module
+  - Provide access to the log entries of the node.
 - Node Logic with Loops
+  - Actuate the routine/lifecycle of a node under different states.
+  - Handle/perform requests from conmunication.
+- State Machine
+  - Provide reliable key-value storage.
 - Communication
+  - Provide fundamental data transmition abilities and fault tolerance of network.
 - Client
+  - Give access to the data on the node, also provide utilities to do test.
 
 There are 3rd party libraries involved in our project.
 
@@ -105,9 +114,21 @@ The storage is implemented with a built-in database library called `RocksDB` (ht
 ## Implementation
 
 
+
 ## Individual Contribution
 
+- Involved in technique selection.
+- Implementing the node logic and loops, with concurrency features/thread pools.
+- Implementing a rough version of dynamic group resizing.
+- Implementing the client.
+- Experiments.
+
 ## Summary
+
+We implemented a rough distributed key-value store based on RAFT protocol. The system is built with considerations about concurrency, with locks and synchronized queues as the main concurrency model. Dynamic group building and resizing is managed. Data and log entries are persisted on disk. A leader election mechanism is implemented, and the leader take in charge of the decisions like commitment. Failures are tolerated and multiple partitions are supported.
+
+There are still some future work remains. The dynamic resizing feature is rough and dangerous. In the RAFT paper (section 6), there is a solution with 2 phase commiting, in which the old and new verions of configurations are managed. Merging the partitions are still a problem. For log entries we did not do compaction. Much effort is needed for these aims.
+
 
 ## Test
 
@@ -115,7 +136,7 @@ The storage is implemented with a built-in database library called `RocksDB` (ht
 
 #### Compile
 
-Please use at least `jdk 1.8` to compile the project, with the MAVEN (`mvn`) toolchain installed.
+Please use at least `jdk 1.8` to compile and run the program, with the MAVEN (`mvn`) toolchain installed.
 
 To compile, run the compiling script `compile.sh` in the root of the project folder, a jar file `KVNode.jar` will appear at the root.
 

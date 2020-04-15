@@ -2,6 +2,8 @@
 
 This is a groupwork for CS7NS6 - Distributed Systems, 2020.
 
+[TOC]
+
 ## Introduciton
 
 This project aim to implement a distributed key-value store based on the RAFT algorithm.
@@ -25,9 +27,9 @@ The original paper is [here](https://raft.github.io/raft.pdf) with the bibliogra
 
 ### Compile
 
-Using `openjdk 12.0`.
+Please use at least `jdk 1.8` to compile the project, with the MAVEN (`mvn`) toolchain installed.
 
-To compile, run the compiling script in the root of the project folder, a jar file `KVNode.jar` will appear at the root.
+To compile, run the compiling script `compile.sh` in the root of the project folder, a jar file `KVNode.jar` will appear at the root.
 
 ```text
 $ sh compile.sh
@@ -69,9 +71,14 @@ To run a server node, use: (where `4111` is the port listening, while `4110` is 
 $ KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y 4110
 ```
 
-The host `localhost` is omitted.
+The host/IP `localhost` is omitted.
 
-The env variable `KVNODENAME` is for logs and data persistence on the file system.
+The ENV variable `KVNODENAME` is for logs (both program log and log entries) and data persistence on the file system:
+
+- `KVNODENAME.log`: program log / output
+- `KVNODENAME-error.log`: program log on error level
+- `KVNODENAME_state/`: data storage
+- `KVNODENAME_log/`: storage for log entries
 
 ### Caveats
 
@@ -85,6 +92,8 @@ For example:
 
 ### Client Command
 
+Program in client mode will read the lines input and parse the command.
+
 `ip:port` is to determine which SERVER/NODE is going to communicate:
 
 - `ip:port get KEY`
@@ -96,7 +105,7 @@ For example:
 - `ip:port setFail ip2:port2`
   - give no response (fail the request handling) to the server `ip2:port2`
 
-For example, getting a value of key `foo` from a node:
+For example, getting a value of key `foo` from a node(`localhost:4111`):
 
 ```text
 localhost:4111 get foo
@@ -116,16 +125,6 @@ We choose to keep `drawio` files inside the project repository.
 
 As you can see from the , there are mainly 4 modules and 2 loops running in a node.
 
-#### Architecture - StateMachine
-
-#### Architecture - LogModule
-
-#### Architecture - Consensus
-
-#### Architecture - Communication
-
-#### Architecture - Loops
-
 ## Test
 
 1. start a 3-instance cluster
@@ -140,22 +139,6 @@ localhost:4114 setFail localhost:4113
 
 ```
 
-2.
-
-```
-localhost:4111 setFail localhost:4115
-localhost:4111 setFail localhost:4114
-localhost:4112 setFail localhost:4115
-localhost:4112 setFail localhost:4114
-localhost:4113 setFail localhost:4115
-localhost:4113 setFail localhost:4114
-localhost:4114 setFail localhost:4111
-localhost:4114 setFail localhost:4112
-localhost:4114 setFail localhost:4113
-localhost:4115 setFail localhost:4111
-localhost:4115 setFail localhost:4112
-localhost:4115 setFail localhost:4113
-
-```
-
 ## About
+
+[Chao Chen](https://github.com/tannineo)

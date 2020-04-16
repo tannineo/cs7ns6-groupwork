@@ -166,7 +166,7 @@ when on line. As for storage systems, data consistency is also important.</p>
 <p>Other modules with brief introduciton are illustrated below.</p>
 <p>The Consensus module, in charge of two functionality:</p>
 <ul>
-<li><code>appendEntries</code>: valuate the log entriess sent from LEADER and append them to log module. To note that <code>appendEntries</code> will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry is me</li>
+<li><code>appendEntries</code>: valuate the log entriess sent from LEADER and append them to log module. To note that <code>appendEntries</code> will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry are valuated and applied.</li>
 <li><code>requestVote</code>: handling vote request from other Candidate.</li>
 </ul>
 <p>The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on dick, so we can lower the risk of losing data when there is a node failure.</p>

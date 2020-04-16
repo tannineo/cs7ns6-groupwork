@@ -85,7 +85,7 @@ For client:
 
 Graph drawing using `draw.io` (https://app.diagrams.net/).
 
-![Architecture](./doc/image/architecture.png)
+![Architecture](doc/image/architecture.png)
 
 A big reason for using Java is that it provides a `synchronized` keyword to delare methods, preventing them to be invoked at the same time by multiple threads, or we can say the methods can be invoked when the thread get the lock.
 
@@ -115,7 +115,7 @@ The storage is implemented with a built-in database library called `RocksDB` (ht
 
 The node state decides the behavior across the modules. 3 states are divided for implementing the RAFT protocol.
 
-![State in RAFT](./doc/image/state.png)
+![State in RAFT](doc/image/state.png)
 
 The every node starts as a Follower. And in our implementation, the first node in the group, it will go through `start -> Follower -> Timeout, Start Election -> Candidate -> Recuive Majority Votes -> Leader`. Then the rest of nodes (real Followers) can join the group with the comunication with Leader (we will explain the resizing later).
 
@@ -148,7 +148,7 @@ Other modules with brief introduciton are illustrated below.
 
 The Consensus module, in charge of two functionality:
 
-- `appendEntries`: valuate the log entriess sent from LEADER and append them to log module. To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry is me
+- `appendEntries`: valuate the log entriess sent from LEADER and append them to log module. To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry are valuated and applied.
 - `requestVote`: handling vote request from other Candidate.
 
 The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on dick, so we can lower the risk of losing data when there is a node failure.

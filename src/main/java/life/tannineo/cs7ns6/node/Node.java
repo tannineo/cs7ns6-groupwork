@@ -523,12 +523,6 @@ public class Node {
         logger.warn("handlerClientRequest handling {} operation,  and key: {}, value: {}",
             ClientKVReq.Type.value(request.getType()), request.getKey(), request.getValue());
 
-        if (!state.equals(NodeState.LEADER)) {
-            logger.warn("I not am leader , only invoke redirect method, leader addr: {}, my addr: {}",
-                peerSet.getLeader(), selfAddr);
-            return redirect(request);
-        }
-
         // directly GET
         if (request.getType() == ClientKVReq.GET) {
             LogEntry logEntry = stateMachine.get(request.getKey());
@@ -538,8 +532,14 @@ public class Node {
             return new ClientKVAck(null);
         }
 
-        // SET need to commit changes
+        // redirect
+        if (!state.equals(NodeState.LEADER)) {
+            logger.warn("I not am leader , only invoke redirect method, leader addr: {}, my addr: {}",
+                peerSet.getLeader(), selfAddr);
+            return redirect(request);
+        }
 
+        // SET need to commit changes
         LogEntry logEntry = LogEntry.newBuilder()
             .command(Command.newBuilder().
                 key(request.getKey()).

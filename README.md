@@ -45,7 +45,7 @@ The original paper is [here](https://raft.github.io/raft.pdf) with the bibliogra
 
 ## Requirements
 
-We are going to implement a distributed key-value store. One famous implementations is 'etcd' (https://github.com/etcd-io/etcd). The service, 'etcd', is a distributed key-value store for critical data, which are often the configurations for the cloud.
+We are going to implement a distributed key-value store. One famous implementation is 'etcd' (https://github.com/etcd-io/etcd). The service, 'etcd', is a distributed key-value store for critical data, which are often the configurations for the cloud.
 
 The read / write metrics are not the key concern in our requirements, as for configurations they are often accessed when one service in the cloud is initializing. What we do concern is the ability to provide non-stop services. It requires the system to have fault tolerance and the ability to resize dynamically
 when on line. As for storage systems, data consistency is also important.

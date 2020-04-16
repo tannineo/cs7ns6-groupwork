@@ -144,14 +144,18 @@ Almost all the handler implementations with writes on the properties of the node
 
 ---
 
-Other modules with brief introduciton are illustrated below.
-
 The Consensus module, in charge of two functionality:
 
-- `appendEntries`: valuate the log entriess sent from LEADER and append them to log module. To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry are valuated and applied.
+- `appendEntries`: evaluate the log entries sent from LEADER and append them to log module. To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry are valuated and applied.
 - `requestVote`: handling vote request from other Candidate.
 
-The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on dick, so we can lower the risk of losing data when there is a node failure.
+---
+
+The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on disk, so we can lower the risk of losing data when there is a node failure.
+
+But when before adding a node or after deleting the node, we need to make sure whether the data and log entries remain on the disk are needed. The data will be recovered and may produce weird behavior on the index and data consistency.
+
+---
 
 A basic implementation of group resizing is done by adding and syncing the list of peers transmitted along with the heartbeat from leader:
 
@@ -163,6 +167,8 @@ A basic implementation of group resizing is done by adding and syncing the list 
 2. Leaving the group passively (when failure occurs):
    1. The node is deleted from leader's list of peers when fail to respond the heartbeat.
    2. A node will also be removed from the peers list of a follower if it fails to respond a RequestVote.
+
+---
 
 The client is implemented by continuous reading the input of the console. Multiple lines can be accepted and each line is processed by a thread in the thread pool (max=20, hardcoded), so we can copy prepared scripts into the console to do requests in batch. Commands of get/set/delete can be parsed and sent by specifying the target node with host and port. For test convinience, a setFail command is added to the requirement/specification for switch the simulation of node (network) failure from one node towards one other node in the group, hense we can manually build partitions by this command.
 

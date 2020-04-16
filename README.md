@@ -121,6 +121,8 @@ The every node starts as a Follower. And in our implementation, the first node i
 
 Leader will handle all the Get/Set/Del(ete) operations from client, request to the Followers will be redirected to the Leader. For Set/Del operations, Leader will need to commit the changes to at least half of the nodes in the group. A log entry conatins a term number, a incremental index number and the operations performed on the database (State Machine), and client will receive the success result when harf of the nodes in the group commited the change.
 
+---
+
 The node maintains the `term` number of itself and a `commitIndex`. Term number is incremental for deciding the which node is up to date to become the Leader. `commitIndex` is the commited index number of log entries for the node itself.
 
 There are two scheduled tasks running inside the node logic.
@@ -130,6 +132,8 @@ The heartbeat task only start from a Leader. In normal situation, when Follower 
 The election task start when the Follower is not receiving the heartbeat from Leader. Followers and Candidates will vote for the requester if themselves' term number is less equal than the requester.
 
 The leader keeps track of all the commitIndex numbers from Followers.
+
+---
 
 Beside timeouts for election and heartbeat, Node Logic also provide handlers from Communication module.
 

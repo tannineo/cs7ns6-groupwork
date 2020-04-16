@@ -451,7 +451,7 @@ public class Node {
                     } else if (result != null) {
                         // larger than me
                         if (result.getTerm() > currentTerm) {
-                            logger.warn("follower [{}] term [{}] than more self, and my term = [{}], so, I will become follower",
+                            logger.warn("follower [{}] term [{}] than myself, and my term = [{}], so, I will become follower",
                                 pPeer, result.getTerm(), currentTerm);
                             currentTerm = result.getTerm();
                             // to be follower
@@ -523,6 +523,13 @@ public class Node {
         logger.warn("handlerClientRequest handling {} operation,  and key: {}, value: {}",
             ClientKVReq.Type.value(request.getType()), request.getKey(), request.getValue());
 
+        // redirect
+        if (!state.equals(NodeState.LEADER)) {
+            logger.warn("I not am leader , only invoke redirect method, leader addr: {}, my addr: {}",
+                peerSet.getLeader(), selfAddr);
+            return redirect(request);
+        }
+
         // directly GET
         if (request.getType() == ClientKVReq.GET) {
             LogEntry logEntry = stateMachine.get(request.getKey());
@@ -530,13 +537,6 @@ public class Node {
                 return new ClientKVAck(logEntry.getCommand());
             }
             return new ClientKVAck(null);
-        }
-
-        // redirect
-        if (!state.equals(NodeState.LEADER)) {
-            logger.warn("I not am leader , only invoke redirect method, leader addr: {}, my addr: {}",
-                peerSet.getLeader(), selfAddr);
-            return redirect(request);
         }
 
         // SET need to commit changes

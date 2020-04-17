@@ -12,10 +12,12 @@ import life.tannineo.cs7ns6.node.entity.network.Response;
 import life.tannineo.cs7ns6.node.entity.param.PeerChange;
 import life.tannineo.cs7ns6.node.entity.reserved.Peer;
 import life.tannineo.cs7ns6.node.entity.result.PeerSetResult;
+import life.tannineo.cs7ns6.web.KVNodeWebService;
 import org.apache.commons.cli.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.ws.Endpoint;
 import java.util.Date;
 import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
@@ -110,6 +112,9 @@ public class App {
 
         if (clientMode) {
             logger.info("KVNODE starts in CLIENT MODE!!~~~~~~~~~~");
+
+            Endpoint.publish("http://127.0.0.1:8023/_kvnode", new KVNodeWebService());
+
             // region watch the commandline input
             Scanner sc = new Scanner(System.in);
             while (sc.hasNext()) {

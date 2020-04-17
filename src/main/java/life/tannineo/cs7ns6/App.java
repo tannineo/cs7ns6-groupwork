@@ -144,7 +144,7 @@ public class App {
                                     logger.warn("Command parsing error...");
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            logger.warn("Command parsing error..." + inputArr);
                         }
                     });
                 }

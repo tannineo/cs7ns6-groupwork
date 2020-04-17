@@ -389,102 +389,106 @@ public class Node {
 
     public Future<Boolean> replication(Peer peer, LogEntry entry) {
 
-        return RaftThreadPool.submit(() -> {
+        return RaftThreadPool.submit(new Callable() {
+            @Override
+            public Object call() throws Exception {
+                Peer pPeer = CloneUtil.clone(peer);
+                LogEntry logEntry = CloneUtil.clone(entry);
 
-            Peer pPeer = CloneUtil.clone(peer);
-            LogEntry logEntry = CloneUtil.clone(entry);
+                logger.warn("replication logEntry : {}", logEntry);
 
-            logger.warn("replication logEntry : {}", logEntry);
+                long start = System.currentTimeMillis(), end = start;
 
-            long start = System.currentTimeMillis(), end = start;
+                // 20s retry timeout
+                while (end - start < 20 * 1000L) {
 
-            // 20s retry timeout
-            while (end - start < 20 * 1000L) {
+                    EntryParam entryParam = new EntryParam();
+                    entryParam.setTerm(currentTerm);
+                    entryParam.setServerId(pPeer.getAddr());
+                    entryParam.setLeaderId(selfAddr);
 
-                EntryParam entryParam = new EntryParam();
-                entryParam.setTerm(currentTerm);
-                entryParam.setServerId(pPeer.getAddr());
-                entryParam.setLeaderId(selfAddr);
+                    entryParam.setLeaderCommit(commitIndex);
 
-                entryParam.setLeaderCommit(commitIndex);
-
-                // First RPC after becoming the LEADER
-                Long nextIndex = nextIndexs.get(pPeer);
-                if (nextIndex == null) nextIndex = 0L;
-                LinkedList<LogEntry> logEntries = new LinkedList<>();
-                if (logEntry.getIndex() >= nextIndex) {
-                    for (long i = nextIndex; i <= logEntry.getIndex(); i++) {
-                        LogEntry l = logModule.read(i);
-                        if (l != null) {
-                            logEntries.add(l);
+                    // First RPC after becoming the LEADER
+                    Long nextIndex = nextIndexs.get(pPeer);
+                    if (nextIndex == null) nextIndex = 0L;
+                    LinkedList<LogEntry> logEntries = new LinkedList<>();
+                    if (logEntry.getIndex() >= nextIndex) {
+                        for (long i = nextIndex; i <= logEntry.getIndex(); i++) {
+                            LogEntry l = logModule.read(i);
+                            if (l != null) {
+                                logEntries.add(l);
+                            }
                         }
+                    } else {
+                        logEntries.add(logEntry);
                     }
-                } else {
-                    logEntries.add(logEntry);
-                }
-                // the mininum index
-                LogEntry preLog = getPreLog(logEntries.getFirst());
-                entryParam.setPreLogTerm(preLog.getTerm());
-                entryParam.setPrevLogIndex(preLog.getIndex());
+                    // the mininum index
+                    LogEntry preLog = getPreLog(logEntries.getFirst());
+                    entryParam.setPreLogTerm(preLog.getTerm());
+                    entryParam.setPrevLogIndex(preLog.getIndex());
 
-                entryParam.setEntries(logEntries.toArray(new LogEntry[0]));
+                    entryParam.setEntries(logEntries.toArray(new LogEntry[0]));
 
-                Request request = Request.newBuilder()
-                    .cmd(Request.A_ENTRIES)
-                    .obj(entryParam)
-                    .url(pPeer.getAddr())
-                    .fromServer(selfAddr)
-                    .build();
+                    @SuppressWarnings("unchecked")
+                    Request<EntryParam> request = Request.newBuilder()
+                        .cmd(Request.A_ENTRIES)
+                        .obj(entryParam)
+                        .url(pPeer.getAddr())
+                        .fromServer(selfAddr)
+                        .build();
 
-                try {
-                    Response response = rClient.send(request);
-                    if (response == null) {
+                    try {
+                        @SuppressWarnings("unchecked")
+                        Response<EntryResult> response = rClient.send(request);
+                        if (response == null) {
+                            return false;
+                        }
+                        EntryResult result = response.getResult();
+                        if (result != null && result.isSuccess()) {
+                            logger.info("append follower entry success , follower=[{}], entry=[{}]", pPeer, entryParam.getEntries());
+                            // update index
+                            nextIndexs.put(pPeer, logEntry.getIndex() + 1);
+                            matchIndexs.put(pPeer, logEntry.getIndex());
+                            return true;
+                        } else if (result != null) {
+                            // larger than me
+                            if (result.getTerm() > currentTerm) {
+                                logger.warn("follower [{}] term [{}] than myself, and my term = [{}], so, I will become follower",
+                                    pPeer, result.getTerm(), currentTerm);
+                                currentTerm = result.getTerm();
+                                // to be follower
+                                state = NodeState.FOLLOWER;
+                                return false;
+                            } else {
+                                if (nextIndex == 0) {
+                                    nextIndex = 1L;
+                                }
+                                nextIndexs.put(pPeer, nextIndex - 1);
+                                logger.warn("follower {} nextIndex not match, will reduce nextIndex and retry RPC append, nextIndex : [{}]", pPeer.getAddr(),
+                                    nextIndex);
+                                // retry until success
+                            }
+                        }
+
+                        end = System.currentTimeMillis();
+
+                    } catch (Exception e) {
+                        logger.warn(e.getMessage(), e);
+                        // TODO retry it in the queue
+                        ReplicationFail model = ReplicationFail.newBuilder()
+                            .callable(this)
+                            .logEntry(entry)
+                            .peer(peer)
+                            .offerTime(System.currentTimeMillis())
+                            .build();
+                        replicationFailQueue.offer(model);
                         return false;
                     }
-                    EntryResult result = (EntryResult) response.getResult();
-                    if (result != null && result.isSuccess()) {
-                        logger.info("append follower entry success , follower=[{}], entry=[{}]", pPeer, entryParam.getEntries());
-                        // update index
-                        nextIndexs.put(pPeer, logEntry.getIndex() + 1);
-                        matchIndexs.put(pPeer, logEntry.getIndex());
-                        return true;
-                    } else if (result != null) {
-                        // larger than me
-                        if (result.getTerm() > currentTerm) {
-                            logger.warn("follower [{}] term [{}] than more self, and my term = [{}], so, I will become follower",
-                                pPeer, result.getTerm(), currentTerm);
-                            currentTerm = result.getTerm();
-                            // to be follower
-                            state = NodeState.FOLLOWER;
-                            return false;
-                        } else {
-                            if (nextIndex == 0) {
-                                nextIndex = 1L;
-                            }
-                            nextIndexs.put(pPeer, nextIndex - 1);
-                            logger.warn("follower {} nextIndex not match, will reduce nextIndex and retry RPC append, nextIndex : [{}]", pPeer.getAddr(),
-                                nextIndex);
-                            // retry until success
-                        }
-                    }
-
-                    end = System.currentTimeMillis();
-
-                } catch (Exception e) {
-                    logger.warn(e.getMessage(), e);
-                    // TODO retry it in the queue
-//                        ReplicationFailModel model =  ReplicationFailModel.newBuilder()
-//                            .callable(this)
-//                            .logEntry(entry)
-//                            .peer(peer)
-//                            .offerTime(System.currentTimeMillis())
-//                            .build();
-//                        replicationFailQueue.offer(model);
-                    return false;
                 }
+                // timeout
+                return false;
             }
-            // timeout
-            return false;
         });
 
     }
@@ -523,6 +527,7 @@ public class Node {
         logger.warn("handlerClientRequest handling {} operation,  and key: {}, value: {}",
             ClientKVReq.Type.value(request.getType()), request.getKey(), request.getValue());
 
+        // redirect
         if (!state.equals(NodeState.LEADER)) {
             logger.warn("I not am leader , only invoke redirect method, leader addr: {}, my addr: {}",
                 peerSet.getLeader(), selfAddr);
@@ -539,7 +544,6 @@ public class Node {
         }
 
         // SET need to commit changes
-
         LogEntry logEntry = LogEntry.newBuilder()
             .command(Command.newBuilder().
                 key(request.getKey()).
@@ -823,7 +827,7 @@ public class Node {
 
             preElectionTime = System.currentTimeMillis() + ThreadLocalRandom.current().nextInt(200) + 150;
 
-            currentTerm += 1;
+            currentTerm++;
             // vote self
             votedFor = selfAddr;
 

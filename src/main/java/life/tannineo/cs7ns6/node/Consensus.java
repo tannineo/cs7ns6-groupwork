@@ -115,7 +115,7 @@ public class Consensus {
             node.preElectionTime = System.currentTimeMillis();
             node.peerSet.setLeader(new Peer(param.getLeaderId()));
 
-            // if term is newer, try to become leader
+            // if term is newer, switch to follower
             if (param.getTerm() >= node.getCurrentTerm()) {
                 logger.info("node {} become FOLLOWER, currentTerm : {}, param Term : {}, param serverId",
                     node.selfAddr, node.currentTerm, param.getTerm(), param.getServerId());
@@ -133,8 +133,8 @@ public class Consensus {
             }
 
             if (node.getLogModule().getLastIndex() != 0 && param.getPrevLogIndex() != 0) {
-                LogEntry logEntry;
-                if ((logEntry = node.getLogModule().read(param.getPrevLogIndex())) != null) {
+                LogEntry logEntry = node.getLogModule().read(param.getPrevLogIndex());
+                if (logEntry != null) {
                     // if the log term of prevLogIndex, is not the same as prevLogTerm,
                     // return false,
                     // decrease nextIndex, and retry

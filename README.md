@@ -45,7 +45,7 @@ The original paper is [here](https://raft.github.io/raft.pdf) with the bibliogra
 
 ## Requirements
 
-We are going to implement a distributed key-value store. One famous implementations is 'etcd' (https://github.com/etcd-io/etcd). The service, 'etcd', is a distributed key-value store for critical data, which are often the configurations for the cloud.
+We are going to implement a distributed key-value store. One famous implementation is 'etcd' (https://github.com/etcd-io/etcd). The service, 'etcd', is a distributed key-value store for critical data, which are often the configurations for the cloud.
 
 The read / write metrics are not the key concern in our requirements, as for configurations they are often accessed when one service in the cloud is initializing. What we do concern is the ability to provide non-stop services. It requires the system to have fault tolerance and the ability to resize dynamically
 when on line. As for storage systems, data consistency is also important.
@@ -121,6 +121,8 @@ The every node starts as a Follower. And in our implementation, the first node i
 
 Leader will handle all the Get/Set/Del(ete) operations from client, request to the Followers will be redirected to the Leader. For Set/Del operations, Leader will need to commit the changes to at least half of the nodes in the group. A log entry conatins a term number, a incremental index number and the operations performed on the database (State Machine), and client will receive the success result when harf of the nodes in the group commited the change.
 
+---
+
 The node maintains the `term` number of itself and a `commitIndex`. Term number is incremental for deciding the which node is up to date to become the Leader. `commitIndex` is the commited index number of log entries for the node itself.
 
 There are two scheduled tasks running inside the node logic.
@@ -130,6 +132,8 @@ The heartbeat task only start from a Leader. In normal situation, when Follower 
 The election task start when the Follower is not receiving the heartbeat from Leader. Followers and Candidates will vote for the requester if themselves' term number is less equal than the requester.
 
 The leader keeps track of all the commitIndex numbers from Followers.
+
+---
 
 Beside timeouts for election and heartbeat, Node Logic also provide handlers from Communication module.
 
@@ -144,14 +148,18 @@ Almost all the handler implementations with writes on the properties of the node
 
 ---
 
-Other modules with brief introduciton are illustrated below.
-
 The Consensus module, in charge of two functionality:
 
-- `appendEntries`: valuate the log entriess sent from LEADER and append them to log module. To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry are valuated and applied.
+- `appendEntries`: evaluate the log entries sent from LEADER and append them to log module. To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry are valuated and applied.
 - `requestVote`: handling vote request from other Candidate.
 
-The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on dick, so we can lower the risk of losing data when there is a node failure.
+---
+
+The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on disk, so we can lower the risk of losing data when there is a node failure.
+
+But when before adding a node or after deleting the node, we need to make sure whether the data and log entries remain on the disk are needed. The data will be recovered and may produce weird behavior on the index and data consistency.
+
+---
 
 A basic implementation of group resizing is done by adding and syncing the list of peers transmitted along with the heartbeat from leader:
 
@@ -163,6 +171,8 @@ A basic implementation of group resizing is done by adding and syncing the list 
 2. Leaving the group passively (when failure occurs):
    1. The node is deleted from leader's list of peers when fail to respond the heartbeat.
    2. A node will also be removed from the peers list of a follower if it fails to respond a RequestVote.
+
+---
 
 The client is implemented by continuous reading the input of the console. Multiple lines can be accepted and each line is processed by a thread in the thread pool (max=20, hardcoded), so we can copy prepared scripts into the console to do requests in batch. Commands of get/set/delete can be parsed and sent by specifying the target node with host and port. For test convinience, a setFail command is added to the requirement/specification for switch the simulation of node (network) failure from one node towards one other node in the group, hense we can manually build partitions by this command.
 

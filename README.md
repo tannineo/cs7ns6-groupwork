@@ -123,6 +123,17 @@ Leader will handle all the Get/Set/Del(ete) operations from client, request to t
 
 ---
 
+Some terms explained in Raft protocol.
+
+Terms are marked with incremental integers. Each term begins with an election, in which one or more candidates attempt to become leader.
+
+Index is a incremental integer to mark the order of a log entry.
+
+Log entries are records with a term, an index and a command (Set/Del) from the client.
+Data modification generates log entries, and they are used to do data replication and recovery.
+
+---
+
 The node maintains the `term` number of itself and a `commitIndex`. Term number is incremental for deciding the which node is up to date to become the Leader. `commitIndex` is the commited index number of log entries for the node itself.
 
 There are two scheduled tasks running inside the node logic.
@@ -130,6 +141,10 @@ There are two scheduled tasks running inside the node logic.
 The heartbeat task only start from a Leader. In normal situation, when Follower receives the heartbeat from Leader, the election timeout will be reset (no need for election when Leader is alive). Term number and commitIndex from the leader are synced to the Followers.
 
 The election task start when the Follower is not receiving the heartbeat from Leader. Followers and Candidates will vote for the requester if themselves' term number is less equal than the requester.
+
+When receiving no heartbeat from Leader, the follower will start a ElectionTask as a Candidate. Itself's `currentTerm` will increase, then vote for itself, and send vote reuests with: `currentTerm`, `lastLogIndex`, `lastLogTerm`
+The request is handled by Consensus Module.
+Once gathered votes for majority `>= n/2`, it will become Leader.
 
 The leader keeps track of all the commitIndex numbers from Followers.
 
@@ -150,8 +165,18 @@ Almost all the handler implementations with writes on the properties of the node
 
 The Consensus module, in charge of two functionality:
 
-- `appendEntries`: evaluate the log entries sent from LEADER and append them to log module. To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). Term numbers and index of the log entry are valuated and applied.
-- `requestVote`: handling vote request from other Candidate.
+`appendEntries`: The method, evaluate the log entries sent from LEADER and append them to log module.
+
+To note that `appendEntries` will also handle heartbeat (heartbeat comes without log entries). The timeout for election task will be reset. If the requester’s term is newer, the handler node will become Follower. If handler node’s term is newer, the requester will become Follower.
+
+Term numbers and index of the log entry are evaluated and then applied. If the previous index from the requester is not the same as the handler’s last index, the method will fail, and ask the requester to retry with a older (index - 1) log index to do replication.
+
+`requestVote`: The method handles requests for vote from other Candidate.
+If there is no record for voting, the Candidate’s term and last index number will be compared.
+
+If the handler node’s term is bigger/newer than the Candidate, fail the request and the Candidate’s Term will be updated.
+
+If the handler node’s last log index or last log term is bigger/newer than Candidate’s, the request will also fail.
 
 ---
 
@@ -172,6 +197,8 @@ A basic implementation of group resizing is done by adding and syncing the list 
    1. The node is deleted from leader's list of peers when fail to respond the heartbeat.
    2. A node will also be removed from the peers list of a follower if it fails to respond a RequestVote.
 
+This rough implementation breaks the partition behavior in RAFT protocol. The Raft protocol only ensures the partition of majority (>n/2) work fine with the Follower-Candidate-Leader state change. We resized the members so the total number `n` is dynamic and breaks this behavior in RAFT.
+
 ---
 
 The client is implemented by continuous reading the input of the console. Multiple lines can be accepted and each line is processed by a thread in the thread pool (max=20, hardcoded), so we can copy prepared scripts into the console to do requests in batch. Commands of get/set/delete can be parsed and sent by specifying the target node with host and port. For test convinience, a setFail command is added to the requirement/specification for switch the simulation of node (network) failure from one node towards one other node in the group, hense we can manually build partitions by this command.
@@ -180,11 +207,13 @@ Also for test convinience we added a webpage GUI to perform request from client.
 
 ## Individual Contribution
 
-- Being involved in technique selection.
-- Implementing the node logic and loops, with concurrency features/thread pools.
+- Involved in technique selection.
+- Involved in Consensus Module.
+- Implementing the node logic and loops/scheduled tasks, with concurrency features/thread pools.
 - Implementing a rough version of dynamic group resizing.
 - Implementing the client and test features (Without GUI).
 - Tests.
+- Slides.
 
 ## Summary
 

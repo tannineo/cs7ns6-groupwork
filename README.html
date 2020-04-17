@@ -1,109 +1,65 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>cs7ns6-groupwork</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css"
-      integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <style>
-      .task-list-item {
-        list-style-type: none;
-      }
-      .task-list-item-checkbox {
-        margin-left: -20px;
-        vertical-align: middle;
-      }
-    </style>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI",
-          "Ubuntu", "Droid Sans", sans-serif;
-        font-size: 14px;
-        line-height: 1.6;
-      }
-    </style>
-
-    <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
-  </head>
-  <body class="vscode-light">
-    <h1 id="cs7ns6-groupwork">cs7ns6-groupwork</h1>
-    <p>CS7NS6 Distributed Systems 2019-20 Exercise 2</p>
-    <p>Implementing a Replicated Service Using Process Groups</p>
-    <p>Final Report by Chao Chen - 19310133</p>
-    <ul>
-      <li>
-        <a href="#cs7ns6-groupwork">cs7ns6-groupwork</a>
-        <ul>
-          <li><a href="#introduciton">Introduciton</a></li>
-          <li><a href="#requirements">Requirements</a></li>
-          <li><a href="#specifications">Specifications</a></li>
-          <li><a href="#architecture">Architecture</a></li>
-          <li><a href="#implementation">Implementation</a></li>
-          <li>
-            <a href="#individual-contribution">Individual Contribution</a>
-          </li>
-          <li><a href="#summary">Summary</a></li>
-          <li>
-            <a href="#test">Test</a>
-            <ul>
-              <li>
-                <a href="#how-to">How to</a>
-                <ul>
-                  <li><a href="#compile">Compile</a></li>
-                  <li><a href="#run">Run</a></li>
-                  <li><a href="#caveats">Caveats</a></li>
-                  <li><a href="#client-command">Client Command</a></li>
-                </ul>
-              </li>
-              <li>
-                <a href="#test-routine--result">Test Routine &amp; Result</a>
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </li>
-    </ul>
-    <h2 id="introduciton">Introduciton</h2>
-    <p>
-      This project aim to implement a distributed key-value store based on the
-      RAFT algorithm. The implementation is done with Java. The exact
-      implementation, functionalities and architecture of this service will be
-      discussed further throughout this document.
-    </p>
-    <p>
-      The work is based on RAFT protocol. A introduction about the RAFT
-      algorithm can be found here:
-      <a href="https://raft.github.io/">https://raft.github.io/</a>
-    </p>
-    <p>
-      The original paper is
-      <a href="https://raft.github.io/raft.pdf">here</a> with the bibliography.
-    </p>
-    <blockquote>
-      <p>
-        Ongaro, Diego, and John Ousterhout. &quot;In search of an understandable
-        consensus algorithm.&quot; 2014 {USENIX} Annual Technical Conference
-        ({USENIX}{ATC} 14). 2014.
-      </p>
-    </blockquote>
-    <pre><code class="language-bib"><code><div>@misc{ongaro2013search,
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>cs7ns6-groupwork</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+        <link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+    </head>
+    <body class="vscode-light">
+        <h1 id="cs7ns6-groupwork">cs7ns6-groupwork</h1>
+<p>CS7NS6 Distributed Systems 2019-20
+Exercise 2</p>
+<p>Implementing a Replicated Service Using Process Groups</p>
+<p>Final Report by Chao Chen - 19310133</p>
+<ul>
+<li><a href="#cs7ns6-groupwork">cs7ns6-groupwork</a>
+<ul>
+<li><a href="#introduciton">Introduciton</a></li>
+<li><a href="#requirements">Requirements</a></li>
+<li><a href="#specifications">Specifications</a></li>
+<li><a href="#architecture">Architecture</a></li>
+<li><a href="#implementation">Implementation</a></li>
+<li><a href="#individual-contribution">Individual Contribution</a></li>
+<li><a href="#summary">Summary</a></li>
+<li><a href="#test">Test</a>
+<ul>
+<li><a href="#how-to">How to</a>
+<ul>
+<li><a href="#compile">Compile</a></li>
+<li><a href="#run">Run</a></li>
+<li><a href="#caveats">Caveats</a></li>
+<li><a href="#client-command">Client Command</a></li>
+</ul>
+</li>
+<li><a href="#test-routine--result">Test Routine &amp; Result</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="introduciton">Introduciton</h2>
+<p>This project aim to implement a distributed key-value store based on the RAFT algorithm. The implementation is done with Java. The exact implementation, functionalities and architecture of this service will be discussed further throughout this document.</p>
+<p>The work is based on RAFT protocol. A introduction about the RAFT algorithm can be found here: <a href="https://raft.github.io/">https://raft.github.io/</a></p>
+<p>The original paper is <a href="https://raft.github.io/raft.pdf">here</a> with the bibliography.</p>
+<blockquote>
+<p>Ongaro, Diego, and John Ousterhout. &quot;In search of an understandable consensus algorithm.&quot; 2014 {USENIX} Annual Technical Conference ({USENIX}{ATC} 14). 2014.</p>
+</blockquote>
+<pre><code class="language-bib"><code><div>@misc{ongaro2013search,
   title={In search of an understandable consensus algorithm (extended version)},
   author={Ongaro, Diego and Ousterhout, John},
   year={2013},
@@ -111,364 +67,174 @@
   url={http://ramcloud.stanford.edu/Raft.pdf}
 }
 </div></code></code></pre>
-    <h2 id="requirements">Requirements</h2>
-    <p>
-      We are going to implement a distributed key-value store. One famous
-      implementations is 'etcd' (<a href="https://github.com/etcd-io/etcd"
-        >https://github.com/etcd-io/etcd</a
-      >). The service, 'etcd', is a distributed key-value store for critical
-      data, which are often the configurations for the cloud.
-    </p>
-    <p>
-      The read / write metrics are not the key concern in our requirements, as
-      for configurations they are often accessed when one service in the cloud
-      is initializing. What we do concern is the ability to provide non-stop
-      services. It requires the system to have fault tolerance and the ability
-      to resize dynamically when on line. As for storage systems, data
-      consistency is also important.
-    </p>
-    <h2 id="specifications">Specifications</h2>
-    <p>For service management:</p>
-    <ul>
-      <li>
-        The group should be able to resize dynamically without stopping the
-        service.
-      </li>
-      <li>
-        The list of members of one group should be configurable, or be updated
-        as the members joining or leaving.
-      </li>
-    </ul>
-    <p>For service operation:</p>
-    <ul>
-      <li>
-        The service should accept concurrent requests from mulitple clients.
-      </li>
-      <li>
-        Data should be persisted on disk instead of memory in case of node
-        failures.
-      </li>
-    </ul>
-    <p>For replica failures:</p>
-    <ul>
-      <li>
-        One node should be able to recognize failures from other nodes in the
-        group.
-      </li>
-      <li>
-        Failures from other nodes should be tolerated, while the function of the
-        group remains normal.
-      </li>
-      <li>
-        As mentioned in service operation section, Data should be persisted on
-        disk, and should be able to recover when the node is back alive.
-      </li>
-      <li>Eventual consistency should be ensured.</li>
-    </ul>
-    <p>For partitioning:</p>
-    <ul>
-      <li>
-        The nodes should still be able to provide services when there is a
-        network partition.
-      </li>
-      <li>
-        N partitions (N &gt;= 2) can be present, and they themselves should be
-        organized.
-      </li>
-      <li>Eventual consistency should be ensured inside each partitions.</li>
-    </ul>
-    <p>For client:</p>
-    <ul>
-      <li>
-        Get/Set/Delete command should be able to execute on all the available
-        nodes.
-      </li>
-      <li>Concurrent requests should be able to made via multiple clients.</li>
-      <li>
-        For test convinience, the client should be able to manage the network
-        behavior of nodes in the service group (designed to test partitions).
-      </li>
-    </ul>
-    <h2 id="architecture">Architecture</h2>
-    <p>
-      Graph drawing using <code>draw.io</code> (<a
-        href="https://app.diagrams.net/"
-        >https://app.diagrams.net/</a
-      >).
-    </p>
-    <p><img src="doc/image/architecture.png" alt="Architecture" /></p>
-    <p>
-      A big reason for using Java is that it provides a
-      <code>synchronized</code> keyword to delare methods, preventing them to be
-      invoked at the same time by multiple threads, or we can say the methods
-      can be invoked when the thread get the lock.
-    </p>
-    <p>Brief information about all the modules:</p>
-    <ul>
-      <li>
-        Consensus
-        <ul>
-          <li>Contains logic for consensus feafure.</li>
-        </ul>
-      </li>
-      <li>
-        Log Module
-        <ul>
-          <li>Provide access to the log entries of the node.</li>
-        </ul>
-      </li>
-      <li>
-        Node Logic with Loops
-        <ul>
-          <li>
-            Actuate the routine/lifecycle of a node under different states.
-          </li>
-          <li>Handle/perform requests from conmunication.</li>
-        </ul>
-      </li>
-      <li>
-        State Machine
-        <ul>
-          <li>Provide reliable key-value storage.</li>
-        </ul>
-      </li>
-      <li>
-        Communication
-        <ul>
-          <li>
-            Provide fundamental data transmition abilities and fault tolerance
-            of network.
-          </li>
-        </ul>
-      </li>
-      <li>
-        Client
-        <ul>
-          <li>
-            Give access to the data on the node, also provide utilities to do
-            test.
-          </li>
-        </ul>
-      </li>
-    </ul>
-    <p>There are 3rd party libraries involved in our project.</p>
-    <p>
-      The communication is based on RPC calls. We use
-      <code>sofa-bolt</code> from Alipay (<a
-        href="https://github.com/sofastack/sofa-bolt"
-        >https://github.com/sofastack/sofa-bolt</a
-      >). The connection is based on TCP with a compact data package defined by
-      the library.
-    </p>
-    <p>
-      The storage is implemented with a built-in database library called
-      <code>RocksDB</code> (<a href="https://github.com/facebook/rocksdb"
-        >https://github.com/facebook/rocksdb</a
-      >) from Facebook. The database is based on file system so we can persist
-      the data and logs on the disk when nodes fail. Another feature is that the
-      RocksDB get operation on single key is thread safe (<a
-        href="https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency"
-        >https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency</a
-      >) while for set operation we need to use external locks.
-    </p>
-    <h2 id="implementation">Implementation</h2>
-    <p>
-      The node state decides the behavior across the modules. 3 states are
-      divided for implementing the RAFT protocol.
-    </p>
-    <p><img src="doc/image/state.png" alt="State in RAFT" /></p>
-    <p>
-      The every node starts as a Follower. And in our implementation, the first
-      node in the group, it will go through
-      <code
-        >start -&gt; Follower -&gt; Timeout, Start Election -&gt; Candidate
-        -&gt; Recuive Majority Votes -&gt; Leader</code
-      >. Then the rest of nodes (real Followers) can join the group with the
-      comunication with Leader (we will explain the resizing later).
-    </p>
-    <p>
-      Leader will handle all the Get/Set/Del(ete) operations from client,
-      request to the Followers will be redirected to the Leader. For Set/Del
-      operations, Leader will need to commit the changes to at least half of the
-      nodes in the group. A log entry conatins a term number, a incremental
-      index number and the operations performed on the database (State Machine),
-      and client will receive the success result when harf of the nodes in the
-      group commited the change.
-    </p>
-    <p>
-      The node maintains the <code>term</code> number of itself and a
-      <code>commitIndex</code>. Term number is incremental for deciding the
-      which node is up to date to become the Leader. <code>commitIndex</code> is
-      the commited index number of log entries for the node itself.
-    </p>
-    <p>There are two scheduled tasks running inside the node logic.</p>
-    <p>
-      The heartbeat task only start from a Leader. In normal situation, when
-      Follower receives the heartbeat from Leader, the election timeout will be
-      reset (no need for election when Leader is alive). Term number and
-      commitIndex from the leader are synced to the Followers.
-    </p>
-    <p>
-      The election task start when the Follower is not receiving the heartbeat
-      from Leader. Followers and Candidates will vote for the requester if
-      themselves' term number is less equal than the requester.
-    </p>
-    <p>The leader keeps track of all the commitIndex numbers from Followers.</p>
-    <p>
-      Beside timeouts for election and heartbeat, Node Logic also provide
-      handlers from Communication module.
-    </p>
-    <ul>
-      <li>handlerRequestVote: handling the vote request.</li>
-      <li>
-        handlerAppendEntries: handling the heartbeat and appending log entries.
-      </li>
-      <li>handlerClientRequest: handling Get/Set/Del request from client.</li>
-      <li>
-        handlerConfigChangeAdd: handling request to add a peer into the peer
-        list.
-      </li>
-      <li>
-        handlerGetConfig: handling request to get config (now for peer list
-        only) from other node.
-      </li>
-      <li>
-        handlerSetFail: For test use. Handling request to turn on/off failure
-        simulation towards one peer.
-      </li>
-    </ul>
-    <p>
-      Almost all the handler implementations with writes on the properties of
-      the node are synchronized, which mean that a type of handler can be only
-      invoked for 1 at a time.
-    </p>
-    <hr />
-    <p>Other modules with brief introduciton are illustrated below.</p>
-    <p>The Consensus module, in charge of two functionality:</p>
-    <ul>
-      <li>
-        <code>appendEntries</code>: valuate the log entriess sent from LEADER
-        and append them to log module. To note that
-        <code>appendEntries</code> will also handle heartbeat (heartbeat comes
-        without log entries). Term numbers and index of the log entry are
-        valuated and applied.
-      </li>
-      <li>
-        <code>requestVote</code>: handling vote request from other Candidate.
-      </li>
-    </ul>
-    <p>
-      The State Machine and Log Module provide similar functionalities towards
-      storing and retrieving data, since both of them is implemented by wrapping
-      RocksDB. Data and log entries are persisted on dick, so we can lower the
-      risk of losing data when there is a node failure.
-    </p>
-    <p>
-      A basic implementation of group resizing is done by adding and syncing the
-      list of peers transmitted along with the heartbeat from leader:
-    </p>
-    <ol>
-      <li>
-        Joining the group when start a node:
-        <ol>
-          <li>
-            Send a request to the leader and get the list of nodes in the group.
-          </li>
-          <li>
-            Add itself to the list and send the
-            <strong>old and new</strong> lists to the leader, then wait for
-            heartbeat.
-          </li>
-          <li>
-            After checking if the old list is the same as the the local one,
-            leader will perform heartbeat as soon as it applys the new list.
-          </li>
-          <li>End of joining.</li>
-        </ol>
-      </li>
-      <li>
-        Leaving the group passively (when failure occurs):
-        <ol>
-          <li>
-            The node is deleted from leader's list of peers when fail to respond
-            the heartbeat.
-          </li>
-          <li>
-            A node will also be removed from the peers list of a follower if it
-            fails to respond a RequestVote.
-          </li>
-        </ol>
-      </li>
-    </ol>
-    <p>
-      The client is implemented by continuous reading the input of the console.
-      Multiple lines can be accepted and each line is processed by a thread in
-      the thread pool (max=20, hardcoded), so we can copy prepared scripts into
-      the console to do requests in batch. Commands of get/set/delete can be
-      parsed and sent by specifying the target node with host and port. For test
-      convinience, a setFail command is added to the requirement/specification
-      for switch the simulation of node (network) failure from one node towards
-      one other node in the group, hense we can manually build partitions by
-      this command.
-    </p>
-    <p>
-      Also for test convinience we added a webpage GUI to perform request from
-      client.
-    </p>
-    <h2 id="individual-contribution">Individual Contribution</h2>
-    <ul>
-      <li>Being involved in technique selection.</li>
-      <li>
-        Implementing the node logic and loops, with concurrency features/thread
-        pools.
-      </li>
-      <li>Implementing a rough version of dynamic group resizing.</li>
-      <li>Implementing the client and test features (Without GUI).</li>
-      <li>Tests.</li>
-    </ul>
-    <h2 id="summary">Summary</h2>
-    <p>
-      We implemented a rough distributed key-value store based on RAFT protocol.
-      The system is built with considerations about concurrency, with locks and
-      synchronized queues as the main concurrency model. Dynamic group building
-      and resizing is managed. Data and log entries are persisted on disk. A
-      leader election mechanism is implemented, and the leader take in charge of
-      the decisions like commitment. Failures are tolerated and multiple
-      partitions are supported.
-    </p>
-    <p>
-      There are still some future work remains. The dynamic resizing feature is
-      rough and dangerous. In the RAFT paper (section 6), there is a solution
-      with 2 phase commiting, in which the old and new verions of configurations
-      are managed. Merging the partitions are still a problem. For log entries
-      we did not do compaction. Much effort is needed for these aims.
-    </p>
-    <h2 id="test">Test</h2>
-    <h3 id="how-to">How to</h3>
-    <h4 id="compile">Compile</h4>
-    <p>
-      Please use at least <code>jdk 1.8</code> to compile and run the program,
-      with the MAVEN (<code>mvn</code>) toolchain installed.
-    </p>
-    <p>
-      To compile, run the compiling script <code>compile.sh</code> in the root
-      of the project folder, a jar file <code>KVNode.jar</code> will appear at
-      the root.
-    </p>
-    <pre><code class="language-text"><code><div>$ sh compile.sh
+<h2 id="requirements">Requirements</h2>
+<p>We are going to implement a distributed key-value store. One famous implementation is 'etcd' (<a href="https://github.com/etcd-io/etcd">https://github.com/etcd-io/etcd</a>). The service, 'etcd', is a distributed key-value store for critical data, which are often the configurations for the cloud.</p>
+<p>The read / write metrics are not the key concern in our requirements, as for configurations they are often accessed when one service in the cloud is initializing. What we do concern is the ability to provide non-stop services. It requires the system to have fault tolerance and the ability to resize dynamically
+when on line. As for storage systems, data consistency is also important.</p>
+<h2 id="specifications">Specifications</h2>
+<p>For service management:</p>
+<ul>
+<li>The group should be able to resize dynamically without stopping the service.</li>
+<li>The list of members of one group should be configurable, or be updated as the members joining or leaving.</li>
+</ul>
+<p>For service operation:</p>
+<ul>
+<li>The service should accept concurrent requests from mulitple clients.</li>
+<li>Data should be persisted on disk instead of memory in case of node failures.</li>
+</ul>
+<p>For replica failures:</p>
+<ul>
+<li>One node should be able to recognize failures from other nodes in the group.</li>
+<li>Failures from other nodes should be tolerated, while the function of the group remains normal.</li>
+<li>As mentioned in service operation section, Data should be persisted on disk, and should be able to recover when the node is back alive.</li>
+<li>Eventual consistency should be ensured.</li>
+</ul>
+<p>For partitioning:</p>
+<ul>
+<li>The nodes should still be able to provide services when there is a network partition.</li>
+<li>N partitions (N &gt;= 2) can be present, and they themselves should be organized.</li>
+<li>Eventual consistency should be ensured inside each partitions.</li>
+</ul>
+<p>For client:</p>
+<ul>
+<li>Get/Set/Delete command should be able to execute on all the available nodes.</li>
+<li>Concurrent requests should be able to made via multiple clients.</li>
+<li>For test convinience, the client should be able to manage the network behavior of nodes in the service group (designed to test partitions).</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<p>Graph drawing using <code>draw.io</code> (<a href="https://app.diagrams.net/">https://app.diagrams.net/</a>).</p>
+<p><img src="file:////Users/cary/Work/cs7ns6-groupwork/doc/image/architecture.png" alt="Architecture"></p>
+<p>A big reason for using Java is that it provides a <code>synchronized</code> keyword to delare methods, preventing them to be invoked at the same time by multiple threads, or we can say the methods can be invoked when the thread get the lock.</p>
+<p>Brief information about all the modules:</p>
+<ul>
+<li>Consensus
+<ul>
+<li>Contains logic for consensus feafure.</li>
+</ul>
+</li>
+<li>Log Module
+<ul>
+<li>Provide access to the log entries of the node.</li>
+</ul>
+</li>
+<li>Node Logic with Loops
+<ul>
+<li>Actuate the routine/lifecycle of a node under different states.</li>
+<li>Handle/perform requests from conmunication.</li>
+</ul>
+</li>
+<li>State Machine
+<ul>
+<li>Provide reliable key-value storage.</li>
+</ul>
+</li>
+<li>Communication
+<ul>
+<li>Provide fundamental data transmition abilities and fault tolerance of network.</li>
+</ul>
+</li>
+<li>Client
+<ul>
+<li>Give access to the data on the node, also provide utilities to do test.</li>
+</ul>
+</li>
+</ul>
+<p>There are 3rd party libraries involved in our project.</p>
+<p>The communication is based on RPC calls. We use <code>sofa-bolt</code> from Alipay (<a href="https://github.com/sofastack/sofa-bolt">https://github.com/sofastack/sofa-bolt</a>). The connection is based on TCP with a compact data package defined by the library.</p>
+<p>The storage is implemented with a built-in database library called <code>RocksDB</code> (<a href="https://github.com/facebook/rocksdb">https://github.com/facebook/rocksdb</a>) from Facebook. The database is based on file system so we can persist the data and logs on the disk when nodes fail. Another feature is that the RocksDB get operation on single key is thread safe (<a href="https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency">https://github.com/facebook/rocksdb/wiki/Basic-Operations#concurrency</a>) while for set operation we need to use external locks.</p>
+<h2 id="implementation">Implementation</h2>
+<p>The node state decides the behavior across the modules. 3 states are divided for implementing the RAFT protocol.</p>
+<p><img src="file:////Users/cary/Work/cs7ns6-groupwork/doc/image/state.png" alt="State in RAFT"></p>
+<p>The every node starts as a Follower. And in our implementation, the first node in the group, it will go through <code>start -&gt; Follower -&gt; Timeout, Start Election -&gt; Candidate -&gt; Recuive Majority Votes -&gt; Leader</code>. Then the rest of nodes (real Followers) can join the group with the comunication with Leader (we will explain the resizing later).</p>
+<p>Leader will handle all the Get/Set/Del(ete) operations from client, request to the Followers will be redirected to the Leader. For Set/Del operations, Leader will need to commit the changes to at least half of the nodes in the group. A log entry conatins a term number, a incremental index number and the operations performed on the database (State Machine), and client will receive the success result when harf of the nodes in the group commited the change.</p>
+<hr>
+<p>Some terms explained in Raft protocol.</p>
+<p>Terms are marked with incremental integers. Each term begins with an election, in which one or more candidates attempt to become leader.</p>
+<p>Index is a incremental integer to mark the order of a log entry.</p>
+<p>Log entries are records with a term, an index and a command (Set/Del) from the client.
+Data modification generates log entries, and they are used to do data replication and recovery.</p>
+<hr>
+<p>The node maintains the <code>term</code> number of itself and a <code>commitIndex</code>. Term number is incremental for deciding the which node is up to date to become the Leader. <code>commitIndex</code> is the commited index number of log entries for the node itself.</p>
+<p>There are two scheduled tasks running inside the node logic.</p>
+<p>The heartbeat task only start from a Leader. In normal situation, when Follower receives the heartbeat from Leader, the election timeout will be reset (no need for election when Leader is alive). Term number and commitIndex from the leader are synced to the Followers.</p>
+<p>The election task start when the Follower is not receiving the heartbeat from Leader. Followers and Candidates will vote for the requester if themselves' term number is less equal than the requester.</p>
+<p>When receiving no heartbeat from Leader, the follower will start a ElectionTask as a Candidate. Itself's <code>currentTerm</code> will increase, then vote for itself, and send vote reuests with: <code>currentTerm</code>, <code>lastLogIndex</code>, <code>lastLogTerm</code>
+The request is handled by Consensus Module.
+Once gathered votes for majority <code>&gt;= n/2</code>, it will become Leader.</p>
+<p>The leader keeps track of all the commitIndex numbers from Followers.</p>
+<hr>
+<p>Beside timeouts for election and heartbeat, Node Logic also provide handlers from Communication module.</p>
+<ul>
+<li>handlerRequestVote: handling the vote request.</li>
+<li>handlerAppendEntries: handling the heartbeat and appending log entries.</li>
+<li>handlerClientRequest: handling Get/Set/Del request from client.</li>
+<li>handlerConfigChangeAdd: handling request to add a peer into the peer list.</li>
+<li>handlerGetConfig: handling request to get config (now for peer list only) from other node.</li>
+<li>handlerSetFail: For test use. Handling request to turn on/off failure simulation towards one peer.</li>
+</ul>
+<p>Almost all the handler implementations with writes on the properties of the node are synchronized, which mean that a type of handler can be only invoked for 1 at a time.</p>
+<hr>
+<p>The Consensus module, in charge of two functionality:</p>
+<p><code>appendEntries</code>: The method, evaluate the log entries sent from LEADER and append them to log module.</p>
+<p>To note that <code>appendEntries</code> will also handle heartbeat (heartbeat comes without log entries). The timeout for election task will be reset. If the requester’s term is newer, the handler node will become Follower. If handler node’s term is newer, the requester will become Follower.</p>
+<p>Term numbers and index of the log entry are evaluated and then applied. If the previous index from the requester is not the same as the handler’s last index, the method will fail, and ask the requester to retry with a older (index - 1) log index to do replication.</p>
+<p><code>requestVote</code>: The method handles requests for vote from other Candidate.
+If there is no record for voting, the Candidate’s term and last index number will be compared.</p>
+<p>If the handler node’s term is bigger/newer than the Candidate, fail the request and the Candidate’s Term will be updated.</p>
+<p>If the handler node’s last log index or last log term is bigger/newer than Candidate’s, the request will also fail.</p>
+<hr>
+<p>The State Machine and Log Module provide similar functionalities towards storing and retrieving data, since both of them is implemented by wrapping RocksDB. Data and log entries are persisted on disk, so we can lower the risk of losing data when there is a node failure.</p>
+<p>But when before adding a node or after deleting the node, we need to make sure whether the data and log entries remain on the disk are needed. The data will be recovered and may produce weird behavior on the index and data consistency.</p>
+<hr>
+<p>A basic implementation of group resizing is done by adding and syncing the list of peers transmitted along with the heartbeat from leader:</p>
+<ol>
+<li>Joining the group when start a node:
+<ol>
+<li>Send a request to the leader and get the list of nodes in the group.</li>
+<li>Add itself to the list and send the <strong>old and new</strong> lists to the leader, then wait for heartbeat.</li>
+<li>After checking if the old list is the same as the the local one, leader will perform heartbeat as soon as it applys the new list.</li>
+<li>End of joining.</li>
+</ol>
+</li>
+<li>Leaving the group passively (when failure occurs):
+<ol>
+<li>The node is deleted from leader's list of peers when fail to respond the heartbeat.</li>
+<li>A node will also be removed from the peers list of a follower if it fails to respond a RequestVote.</li>
+</ol>
+</li>
+</ol>
+<p>This rough implementation breaks the partition behavior in RAFT protocol. The Raft protocol only ensures the partition of majority (&gt;n/2) work fine with the Follower-Candidate-Leader state change. We resized the members so the total number <code>n</code> is dynamic and breaks this behavior in RAFT.</p>
+<hr>
+<p>The client is implemented by continuous reading the input of the console. Multiple lines can be accepted and each line is processed by a thread in the thread pool (max=20, hardcoded), so we can copy prepared scripts into the console to do requests in batch. Commands of get/set/delete can be parsed and sent by specifying the target node with host and port. For test convinience, a setFail command is added to the requirement/specification for switch the simulation of node (network) failure from one node towards one other node in the group, hense we can manually build partitions by this command.</p>
+<p>Also for test convinience we added a webpage GUI to perform request from client.</p>
+<h2 id="individual-contribution">Individual Contribution</h2>
+<ul>
+<li>Involved in technique selection.</li>
+<li>Involved in Consensus Module.</li>
+<li>Implementing the node logic and loops/scheduled tasks, with concurrency features/thread pools.</li>
+<li>Implementing a rough version of dynamic group resizing.</li>
+<li>Implementing the client and test features (Without GUI).</li>
+<li>Tests.</li>
+<li>Slides.</li>
+</ul>
+<h2 id="summary">Summary</h2>
+<p>We implemented a rough distributed key-value store based on RAFT protocol. The system is built with considerations about concurrency, with locks and synchronized queues as the main concurrency model. Dynamic group building and resizing is managed. Data and log entries are persisted on disk. A leader election mechanism is implemented, and the leader take in charge of the decisions like commitment. Failures are tolerated and multiple partitions are supported.</p>
+<p>There are still some future work remains. The dynamic resizing feature is rough and dangerous. In the RAFT paper (section 6), there is a solution with 2 phase commiting, in which the old and new verions of configurations are managed. Merging the partitions are still a problem. For log entries we did not do compaction. Much effort is needed for these aims.</p>
+<h2 id="test">Test</h2>
+<h3 id="how-to">How to</h3>
+<h4 id="compile">Compile</h4>
+<p>Please use at least <code>jdk 1.8</code> to compile and run the program, with the MAVEN (<code>mvn</code>) toolchain installed.</p>
+<p>To compile, run the compiling script <code>compile.sh</code> in the root of the project folder, a jar file <code>KVNode.jar</code> will appear at the root.</p>
+<pre><code class="language-text"><code><div>$ sh compile.sh
 </div></code></code></pre>
-    <h4 id="run">Run</h4>
-    <p>The builds of the code are divided into:</p>
-    <ul>
-      <li>client: with <code>-c</code> flag</li>
-      <li>
-        node (server): without <code>-c</code> flag and with valid configs
-      </li>
-    </ul>
-    <p>
-      Use <code>-h</code> or <code>--help</code> command to access the help.
-    </p>
-    <pre><code class="language-text"><code><div>$ java -jar KVNode.jar -h
+<h4 id="run">Run</h4>
+<p>The builds of the code are divided into:</p>
+<ul>
+<li>client: with <code>-c</code> flag</li>
+<li>node (server): without <code>-c</code> flag and with valid configs</li>
+</ul>
+<p>Use <code>-h</code> or <code>--help</code> command to access the help.</p>
+<pre><code class="language-text"><code><div>$ java -jar KVNode.jar -h
 usage: KVNode.jar
  -c,--client              Initiate as a client.
  -h,--help                Help
@@ -481,126 +247,74 @@ usage: KVNode.jar
                           target-host to establish a new group (as the first and
                           the leader)
 </div></code></code></pre>
-    <p>To run client, use:</p>
-    <pre><code class="language-text"><code><div>$ KVNODENAME=CLIENT java -jar KVNode.jar -c
+<p>To run client, use:</p>
+<pre><code class="language-text"><code><div>$ KVNODENAME=CLIENT java -jar KVNode.jar -c
 </div></code></code></pre>
-    <p>
-      To run a server node, use: (where <code>4111</code> is the port listening,
-      while <code>4110</code> is the target/leader port)
-    </p>
-    <pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y 4110
+<p>To run a server node, use: (where <code>4111</code> is the port listening, while <code>4110</code> is the target/leader port)</p>
+<pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y 4110
 </div></code></code></pre>
-    <p>The host/IP <code>localhost</code> is omitted.</p>
-    <p>
-      The ENV variable <code>KVNODENAME</code> is for logs (both program log and
-      log entries) and data persistence on the file system:
-    </p>
-    <ul>
-      <li><code>KVNODENAME.log</code>: program log / output</li>
-      <li><code>KVNODENAME_state/</code>: data storage</li>
-      <li><code>KVNODENAME_log/</code>: storage for log entries</li>
-    </ul>
-    <h4 id="caveats">Caveats</h4>
-    <p>
-      Do notice to start nodes <strong>ONE BEFORE OTHERS</strong> with LEADER -
-      FOLLOWER order to establish the cluster.
-    </p>
-    <p>For example:</p>
-    <ol>
-      <li>
-        start a server on port <code>4111</code> first (without the flag
-        <code>-y</code>):
-        <code>KVNODENAME=4111 java -jar KVNode.jar -p 4111</code>
-      </li>
-      <li>
-        Until <code>4111</code> is ready as a <strong>LEADER</strong>, start
-        another server (<code>4112</code>) using:
-        <code>KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111</code>
-      </li>
-      <li>Repeat step 2 to add more nodes</li>
-    </ol>
-    <p>
-      Also be care about the RocksDB files remain in the file system. Since data
-      and logs are persisted, it might bring impact to the experiment. Clean
-      them before experiment.
-    </p>
-    <h4 id="client-command">Client Command</h4>
-    <p>
-      Program in client mode will read the lines input and parse the command.
-    </p>
-    <p>
-      <code>ip:port</code> is to determine which SERVER/NODE is going to
-      communicate:
-    </p>
-    <ul>
-      <li>
-        <code>ip:port get KEY</code>
-        <ul>
-          <li>get a value using the <code>KEY</code></li>
-        </ul>
-      </li>
-      <li>
-        <code>ip:port set KEY VALUE</code>
-        <ul>
-          <li>set <code>VALUE</code> to the <code>KEY</code></li>
-        </ul>
-      </li>
-      <li>
-        <code>ip:port del KEY</code>
-        <ul>
-          <li>
-            delete using the <code>KEY</code> (actually implemented with
-            <code>ip:port set KEY null</code>)
-          </li>
-        </ul>
-      </li>
-      <li>
-        <code>ip:port setFail ip2:port2</code>
-        <ul>
-          <li>
-            give no response (fail the request handling) to the server
-            <code>ip2:port2</code>
-          </li>
-        </ul>
-      </li>
-    </ul>
-    <p>
-      For example, getting a value of key <code>foo</code> from a
-      node(<code>localhost:4111</code>):
-    </p>
-    <pre><code class="language-text"><code><div>localhost:4111 get foo
+<p>The host/IP <code>localhost</code> is omitted.</p>
+<p>The ENV variable <code>KVNODENAME</code> is for logs (both program log and log entries) and data persistence on the file system:</p>
+<ul>
+<li><code>KVNODENAME.log</code>: program log / output</li>
+<li><code>KVNODENAME_state/</code>: data storage</li>
+<li><code>KVNODENAME_log/</code>: storage for log entries</li>
+</ul>
+<h4 id="caveats">Caveats</h4>
+<p>Do notice to start nodes <strong>ONE BEFORE OTHERS</strong> with LEADER - FOLLOWER order to establish the cluster.</p>
+<p>For example:</p>
+<ol>
+<li>start a server on port <code>4111</code> first (without the flag <code>-y</code>): <code>KVNODENAME=4111 java -jar KVNode.jar -p 4111</code></li>
+<li>Until <code>4111</code> is ready as a <strong>LEADER</strong>, start another server (<code>4112</code>) using: <code>KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111</code></li>
+<li>Repeat step 2 to add more nodes</li>
+</ol>
+<p>Also be care about the RocksDB files remain in the file system. Since data and logs are persisted, it might bring impact to the experiment. Clean them before experiment.</p>
+<h4 id="client-command">Client Command</h4>
+<p>Program in client mode will read the lines input and parse the command.</p>
+<p><code>ip:port</code> is to determine which SERVER/NODE is going to communicate:</p>
+<ul>
+<li><code>ip:port get KEY</code>
+<ul>
+<li>get a value using the <code>KEY</code></li>
+</ul>
+</li>
+<li><code>ip:port set KEY VALUE</code>
+<ul>
+<li>set <code>VALUE</code> to the <code>KEY</code></li>
+</ul>
+</li>
+<li><code>ip:port del KEY</code>
+<ul>
+<li>delete using the <code>KEY</code> (actually implemented with <code>ip:port set KEY null</code>)</li>
+</ul>
+</li>
+<li><code>ip:port setFail ip2:port2</code>
+<ul>
+<li>give no response (fail the request handling) to the server <code>ip2:port2</code></li>
+</ul>
+</li>
+</ul>
+<p>For example, getting a value of key <code>foo</code> from a node(<code>localhost:4111</code>):</p>
+<pre><code class="language-text"><code><div>localhost:4111 get foo
 </div></code></code></pre>
-    <h3 id="test-routine--result">Test Routine &amp; Result</h3>
-    <p>
-      For easy recognition the log prefixes with dates and class names (<code
-        >12:07:42.308 [pool-1-thread-2] INFO life.tannineo.cs7ns6.App</code
-      >) are omitted.
-    </p>
-    <ol>
-      <li>
-        <p>
-          Start a 3-instance cluster with leader first decided, we can see
-          without specifying the complete list of nodes/peers the cluster still
-          can be built. And nodes in service can be terminated as you want. A
-          simplified (also dangerous) dynamic management based on detecting
-          connection failures (e.g. heartbeat) is implemented.
-        </p>
-        <pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
+<h3 id="test-routine--result">Test Routine &amp; Result</h3>
+<p>For easy recognition the log prefixes with dates and class names (<code>12:07:42.308 [pool-1-thread-2] INFO  life.tannineo.cs7ns6.App</code>) are omitted.</p>
+<ol>
+<li>
+<p>Start a 3-instance cluster with leader first decided, we can see without specifying the complete list of nodes/peers the cluster still can be built. And nodes in service can be terminated as you want. A simplified (also dangerous) dynamic management based on detecting connection failures (e.g. heartbeat) is implemented.</p>
+<pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
 $ KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111
 $ KVNODENAME=4113 java -jar KVNode.jar -p 4113 -y 4111
 </div></code></code></pre>
-      </li>
-      <li>
-        <p>
-          Start a 3-instance cluster with leader first decided, use the client
-          to execute the command <em>one by one</em>:
-        </p>
-        <pre><code class="language-text"><code><div>localhost:4112 get foo
+</li>
+<li>
+<p>Start a 3-instance cluster with leader first decided, use the client to execute the command <em>one by one</em>:</p>
+<pre><code class="language-text"><code><div>localhost:4112 get foo
 localhost:4111 set foo bar
 localhost:4113 get foo
 </div></code></code></pre>
-        <p>We can see that we can get / set on different nodes.</p>
-        <pre><code class="language-text"><code><div>...
+<p>We can see that we can get / set on different nodes.</p>
+<pre><code class="language-text"><code><div>...
 - You just input:
 localhost:4112 get foo
 - request content : foo, url : localhost:4112, put response : ClientKVAck(result=null)
@@ -616,54 +330,33 @@ localhost:4113 get foo
 - request content : foo, url : localhost:4113, put response : ClientKVAck(result=Command(opt=null, key=foo, value=bar))
 - get foo=bar
 </div></code></code></pre>
-      </li>
-      <li>
-        <p>
-          Close <code>localhost:4111</code>, wait for about 10 sec (election
-          task timeout), the rest 2 nodes will go for election. Then update data
-          on <code>localhost:4112</code>:
-        </p>
-        <pre><code class="language-text"><code><div>localhost:4112 set foo barbar
+</li>
+<li>
+<p>Close <code>localhost:4111</code>, wait for about 10 sec (election task timeout), the rest 2 nodes will go for election. Then update data on <code>localhost:4112</code>:</p>
+<pre><code class="language-text"><code><div>localhost:4112 set foo barbar
 </div></code></code></pre>
-        <p>
-          When successed, start <code>localhost:4111</code> to join the cluster
-          as a follower:
-          <code
-            >KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y
-            ?WHOSTHELEADER?</code
-          >, we can see the index persist and then updated by 1 when join the
-          cluster (because we did one change). Then execute query on client:
-        </p>
-        <pre><code class="language-text"><code><div>localhost:4111 get foo
+<p>When successed, start <code>localhost:4111</code> to join the cluster as a follower: <code>KVNODENAME=4111 java -jar KVNode.jar -p 4111 -y ?WHOSTHELEADER?</code>, we can see the index persist and then updated by 1 when join the cluster (because we did one change). Then execute query on client:</p>
+<pre><code class="language-text"><code><div>localhost:4111 get foo
 </div></code></code></pre>
-        <p>We can get <code>barbar</code>, the new data.</p>
-        <pre><code class="language-text"><code><div>...
+<p>We can get <code>barbar</code>, the new data.</p>
+<pre><code class="language-text"><code><div>...
 localhost:4111 get foo
 - You just input:
 localhost:4111 get foo
 - request content : foo, url : localhost:4111, put response : ClientKVAck(result=Command(opt=null, key=foo, value=barbar))
 - get foo=barbar
 </div></code></code></pre>
-      </li>
-      <li>
-        <p>
-          For partition, we test it on a 5-instance cluster.
-          <strong
-            >Remove all the disk files generated for clean experiment</strong
-          >, and start 5 nodes.
-        </p>
-        <pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
+</li>
+<li>
+<p>For partition, we test it on a 5-instance cluster. <strong>Remove all the disk files generated for clean experiment</strong>, and start 5 nodes.</p>
+<pre><code class="language-text"><code><div>$ KVNODENAME=4111 java -jar KVNode.jar -p 4111          # as leader
 $ KVNODENAME=4112 java -jar KVNode.jar -p 4112 -y 4111
 $ KVNODENAME=4113 java -jar KVNode.jar -p 4113 -y 4111
 $ KVNODENAME=4114 java -jar KVNode.jar -p 4114 -y 4111
 $ KVNODENAME=4115 java -jar KVNode.jar -p 4115 -y 4111
 </div></code></code></pre>
-        <p>
-          In the client, we execute the commands in batch (the client command
-          executor is also implemented concurrently, and can parse multiple
-          lines).
-        </p>
-        <pre><code class="language-text"><code><div>localhost:4111 setFail localhost:4113
+<p>In the client, we execute the commands in batch (the client command executor is also implemented concurrently, and can parse multiple lines).</p>
+<pre><code class="language-text"><code><div>localhost:4111 setFail localhost:4113
 localhost:4111 setFail localhost:4114
 localhost:4111 setFail localhost:4115
 localhost:4112 setFail localhost:4113
@@ -680,11 +373,8 @@ localhost:4115 setFail localhost:4112
 localhost:4115 setFail localhost:4113
 localhost:4115 setFail localhost:4114
 </div></code></code></pre>
-        <p>
-          The node are divided into
-          <code>4111 &amp; 4112 | 4113 &amp; 4114 | 4115</code>. n = 3
-        </p>
-        <pre><code class="language-text"><code><div>...
+<p>The node are divided into <code>4111 &amp; 4112 | 4113 &amp; 4114 | 4115</code>. n = 3</p>
+<pre><code class="language-text"><code><div>...
 - setFail localhost:4111 ok -&gt; true
 - setFail localhost:4113 ok -&gt; true
 - setFail localhost:4112 ok -&gt; true
@@ -703,13 +393,11 @@ localhost:4115 setFail localhost:4114
 - setFail localhost:4114 ok -&gt; true
 
 </div></code></code></pre>
-        <p>
-          <code>true</code> means start blocking. Execute the same command again
-          to turn it into <code>false</code> (like a switch).
-        </p>
-        <p>Wait for election happens among the nodes.</p>
-        <p>Partition merging features are not implemented.</p>
-      </li>
-    </ol>
-  </body>
-</html>
+<p><code>true</code> means start blocking. Execute the same command again to turn it into <code>false</code> (like a switch).</p>
+<p>Wait for election happens among the nodes.</p>
+<p>Partition merging features are not implemented.</p>
+</li>
+</ol>
+
+    </body>
+    </html>

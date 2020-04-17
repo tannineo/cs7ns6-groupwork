@@ -49,7 +49,7 @@ public class Request<T> implements Serializable {
 
 
     /**
-     * set fail to true false
+     * set fail to true / false
      */
     public static final int SET_FAIL = 6;
 
